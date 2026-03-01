@@ -43,16 +43,6 @@ export default function TopicSelector({ onStart, isLoading }: TopicSelectorProps
     }}>
       {/* Hero */}
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-        <h1 style={{
-          fontSize: 'clamp(40px, 8vw, 72px)',
-          fontWeight: '900',
-          color: 'white',
-          margin: '0 0 12px',
-          letterSpacing: '-1px',
-          textShadow: '0 0 40px rgba(124,58,237,0.5)',
-        }}>
-          luminary
-        </h1>
         <p style={{
           color: 'rgba(255,255,255,0.6)',
           fontSize: 'clamp(14px, 2vw, 18px)',

@@ -23,66 +23,82 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
     }}>
       {/* Header */}
       <div style={{
-        padding: '18px 14px 14px',
+        padding: '14px 14px 12px',
         borderBottom: '1px solid rgba(167,139,250,0.12)',
         flexShrink: 0,
-        textAlign: 'center',
         position: 'relative',
       }}>
-        {/* Subtle spark/glint layer */}
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            background:
-              'radial-gradient(10px 10px at 18% 35%, rgba(239,178,255,0.18), transparent 60%),'
-              + 'radial-gradient(12px 12px at 72% 30%, rgba(196,181,253,0.14), transparent 62%),'
-              + 'radial-gradient(8px 8px at 56% 70%, rgba(124,58,237,0.14), transparent 60%)',
-            opacity: 0.9,
-            filter: 'blur(0.2px)',
-            animation: 'lmSparkDrift 5.6s ease-in-out infinite',
-            mixBlendMode: 'screen',
-          }}
-        />
-
+        {/* Label */}
         <p style={{
-          margin: 0,
-          fontSize: '22px',
-          fontWeight: 900,
-          letterSpacing: '-0.02em',
-          // Flowing purple gradient text
-          // A tiled gradient where the start == end, so the loop is seamless.
-          backgroundImage: 'repeating-linear-gradient(90deg, rgba(124,58,237,0.95) 0%, rgba(196,181,253,0.95) 30%, rgba(124,58,237,0.95) 60%, rgba(124,58,237,0.95) 100%)',
-          backgroundSize: '200% 100%',
-          backgroundPosition: '0% 50%',
-          willChange: 'background-position',
-          WebkitBackgroundClip: 'text',
-          backgroundClip: 'text',
-          color: 'transparent',
-          filter: 'drop-shadow(0 0 6px rgba(124,58,237,0.14))',
-          animation: 'lessonHistoryFlow 4.8s linear infinite',
+          margin: '0 0 10px',
+          fontSize: '9px',
+          fontWeight: 800,
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color: 'rgba(196,181,253,0.42)',
         }}>
           Lesson History
         </p>
-        <p style={{
-          margin: '6px 0 0',
-          fontSize: '12px',
-          fontWeight: 500,
-          lineHeight: 1.25,
-          color: 'rgba(196,181,253,0.75)',
+
+        {/* Summary card — shows latest topic summary when available */}
+        <div style={{
+          position: 'relative',
+          borderRadius: '12px',
+          padding: '12px 13px',
+          background: 'linear-gradient(135deg, rgba(124,58,237,0.14) 0%, rgba(92,32,180,0.07) 100%)',
+          border: '1px solid rgba(167,139,250,0.22)',
+          boxShadow: '0 0 22px rgba(124,58,237,0.12), inset 0 0 0 1px rgba(239,178,255,0.04)',
+          overflow: 'hidden',
         }}>
-          Quick recap of what you covered.
-        </p>
+          {/* Ambient glow */}
+          <div aria-hidden style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(ellipse 80% 70% at 50% 0%, rgba(167,72,255,0.12), transparent 70%)',
+            pointerEvents: 'none',
+          }} />
+
+          {topics.length > 0 ? (
+            <>
+              <p style={{
+                margin: '0 0 5px',
+                fontSize: 'clamp(15px, 1.65vw, 19px)',
+                fontWeight: 900,
+                lineHeight: 1.22,
+                letterSpacing: '-0.025em',
+                backgroundImage: 'linear-gradient(135deg, #ffffff 0%, rgba(239,178,255,0.92) 55%, rgba(196,181,253,0.85) 100%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+                position: 'relative',
+              }}>
+                {topics[topics.length - 1].summary ?? topics[topics.length - 1].title}
+              </p>
+              <p style={{
+                margin: 0,
+                fontSize: '10px',
+                color: 'rgba(196,181,253,0.5)',
+                letterSpacing: '0.01em',
+              }}>
+                {topics.length} {topics.length === 1 ? 'topic' : 'topics'} covered
+              </p>
+            </>
+          ) : (
+            <p style={{
+              margin: 0,
+              fontSize: '13px',
+              fontWeight: 700,
+              fontStyle: 'italic',
+              color: 'rgba(196,181,253,0.28)',
+              lineHeight: 1.4,
+            }}>
+              Your lesson summary will appear here
+            </p>
+          )}
+        </div>
       </div>
 
       <style>{`
-        @keyframes lessonHistoryFlow {
-          0% { background-position: 0% 50%; }
-          100% { background-position: -200% 50%; }
-        }
-
         @keyframes lmSparkDrift {
           0% { transform: translate3d(0, 0, 0); opacity: 0.75; }
           50% { transform: translate3d(0, 2px, 0); opacity: 0.92; }

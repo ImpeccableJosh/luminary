@@ -72,6 +72,8 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
   const waveBarRefs = useRef<Array<HTMLSpanElement | null>>([])
   const waveTweensRef = useRef<gsap.core.Tween[]>([])
   const phraseLoopRef = useRef<gsap.core.Timeline | null>(null)
+  const shimmerTweenRef = useRef<gsap.core.Tween | null>(null)
+  const isShowingLuminaryRef = useRef(false)
   const micGlowXToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micGlowYToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micSurfaceXToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
@@ -608,62 +610,95 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
     })
   }, [isSpeaking, isWaveformMode])
 
-  // Swap rotating phrase → "luminary" while connected/connecting, back to cycling on disconnect
+  // Swap rotating phrase → "luminary" (with spotlight) while connected/connecting, back on disconnect
   useEffect(() => {
     const el = phraseRef.current
     const loop = phraseLoopRef.current
-    if (!el) return
+    if (!el || !loop) return
 
-    if (isWaveformMode) {
-      // Pause the phrase cycle and show "luminary"
-      loop?.pause()
+    if (isWaveformMode && !isShowingLuminaryRef.current) {
+      // ── CONNECT: stop cycling, show "luminary" ──────────────────────────
+      isShowingLuminaryRef.current = true
+      loop.pause()
+      shimmerTweenRef.current?.kill()
       gsap.killTweensOf(el)
+
       gsap.to(el, {
-        x: 60,
-        autoAlpha: 0,
-        filter: 'blur(6px)',
-        duration: 0.2,
-        ease: 'power3.in',
-        overwrite: true,
+        x: 60, autoAlpha: 0, filter: 'blur(6px)',
+        duration: 0.2, ease: 'power3.in', overwrite: true,
         onComplete: () => {
           el.textContent = 'luminary'
+
+          // Gradient + background-clip for the spotlight effect
+          el.style.backgroundImage = [
+            'linear-gradient(90deg,',
+            '#efb2ff 0%, #efb2ff 40%,',
+            'rgba(255,252,255,1) 50%,',
+            '#efb2ff 60%, #efb2ff 100%)',
+          ].join(' ')
+          el.style.backgroundSize = '400% 100%'
+          el.style.backgroundPosition = '0% 50%'
+          el.style.backgroundClip = 'text'
+          ;(el.style as Record<string, string>)['webkitBackgroundClip'] = 'text'
+          el.style.color = 'transparent'
+
+          // Enter animation
           gsap.fromTo(
             el,
             { x: -40, yPercent: 10, filter: 'blur(8px)', autoAlpha: 0 },
-            { x: 0, yPercent: 0, filter: 'blur(0px)', autoAlpha: 1, duration: 0.52, ease: 'expo.out' },
+            {
+              x: 0, yPercent: 0, filter: 'blur(0px)', autoAlpha: 1,
+              duration: 0.52, ease: 'expo.out',
+              onComplete: () => {
+                // Start left-to-right spotlight sweep after entry is done
+                const pos = { p: 0 }
+                el.style.backgroundPosition = '0% 50%'
+                shimmerTweenRef.current = gsap.to(pos, {
+                  p: 100,
+                  duration: 2.4,
+                  ease: 'sine.inOut',
+                  repeat: -1,
+                  repeatDelay: 0.9,
+                  onUpdate() { el.style.backgroundPosition = `${pos.p}% 50%` },
+                })
+              },
+            },
           )
         },
       })
-    } else if (status === 'disconnected' && el.textContent === 'luminary') {
-      // Fade "luminary" out, bring back the cycling phrases
+    } else if (!isWaveformMode && isShowingLuminaryRef.current) {
+      // ── DISCONNECT: fade out "luminary", restore cycling ─────────────────
+      isShowingLuminaryRef.current = false
+      shimmerTweenRef.current?.kill()
+      shimmerTweenRef.current = null
       gsap.killTweensOf(el)
+
       gsap.to(el, {
-        x: 60,
-        autoAlpha: 0,
-        filter: 'blur(6px)',
-        duration: 0.2,
-        ease: 'power3.in',
-        overwrite: true,
+        x: 60, autoAlpha: 0, filter: 'blur(6px)',
+        duration: 0.2, ease: 'power3.in', overwrite: true,
         onComplete: () => {
-          if (!loop) return
+          // Reset inline styles before restoring normal phrase color
+          el.style.backgroundImage = ''
+          el.style.backgroundSize = ''
+          el.style.backgroundPosition = ''
+          el.style.backgroundClip = ''
+          ;(el.style as Record<string, string>)['webkitBackgroundClip'] = ''
+          el.style.color = '#efb2ff'
+
           el.textContent = HERO_PHRASES[0]
           gsap.fromTo(
             el,
             { x: -52, yPercent: 16, filter: 'blur(10px)', autoAlpha: 0 },
             {
-              x: 0,
-              yPercent: 0,
-              filter: 'blur(0px)',
-              autoAlpha: 1,
-              duration: 0.52,
-              ease: 'expo.out',
+              x: 0, yPercent: 0, filter: 'blur(0px)', autoAlpha: 1,
+              duration: 0.52, ease: 'expo.out',
               onComplete: () => { loop.restart() },
             },
           )
         },
       })
     }
-  }, [isWaveformMode, status])
+  }, [isWaveformMode])
 
   // Ambient breathing glow around the mic (calm) + slightly stronger while speaking
   useEffect(() => {
@@ -761,7 +796,7 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
     >
       {/* Loading overlay — shown while connecting to the agent */}
       {isConnecting && (
-        <LoadingScene mode="overlay" label="Connecting to luminary…" />
+        <LoadingScene mode="overlay" label="Education should be for everyone." />
       )}
       <div
         ref={heroRef}
@@ -1138,15 +1173,42 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
               transition={{ type: 'spring', stiffness: 340, damping: 26 }}
               style={{
                 display: 'flex', flexDirection: 'column', gap: '8px',
-                padding: '14px', borderRadius: '12px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                width: '280px',
+                padding: '14px',
+                borderRadius: '14px',
+                background: 'linear-gradient(160deg, rgba(18,18,24,0.84) 0%, rgba(12,12,18,0.86) 100%)',
+                border: '1px solid rgba(188,178,236,0.14)',
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.02), 0 18px 42px rgba(0,0,0,0.45)',
+                width: '330px',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: '-30% -20% auto',
+                  height: '70%',
+                  background: 'radial-gradient(ellipse at center, rgba(167,72,255,0.22) 0%, rgba(167,72,255,0.06) 45%, rgba(167,72,255,0) 100%)',
+                  pointerEvents: 'none',
+                  filter: 'blur(8px)',
+                }}
+              />
+              <p style={{
+                margin: '0 0 2px',
+                fontSize: '10px',
+                fontWeight: 700,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: 'rgba(205,190,255,0.72)',
+                position: 'relative',
+                zIndex: 1,
+              }}>
+                Prompt
+              </p>
               <input
                 autoFocus
-                placeholder="What do you want to learn?"
+                placeholder="Ask anything. I’ll build your lesson."
                 value={bypassTopic}
                 onChange={(e) => setBypassTopic(e.target.value)}
                 onKeyDown={(e) => {
@@ -1158,45 +1220,43 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
                 }}
                 className="lm-bypass-input"
                 style={{
-                  background: 'rgba(167,72,255,0.08)',
-                  border: '1px solid rgba(167,72,255,0.22)',
-                  borderRadius: '8px', padding: '10px 13px',
-                  color: 'white', fontSize: '13px', outline: 'none',
-                  transition: 'border-color 0.2s',
+                  background: 'linear-gradient(180deg, rgba(24,24,34,0.92) 0%, rgba(14,14,22,0.94) 100%)',
+                  border: '1px solid rgba(190,180,238,0.24)',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  color: 'rgba(255,255,255,0.96)',
+                  fontSize: '13px',
+                  fontWeight: 520,
+                  outline: 'none',
+                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.03), 0 10px 26px rgba(0,0,0,0.28)',
+                  transition: 'border-color 0.2s, box-shadow 0.2s, background 0.2s',
+                  position: 'relative',
+                  zIndex: 1,
                 }}
               />
-              <motion.button
-                type="button"
-                disabled={!bypassTopic.trim()}
-                onClick={() => {
-                  const q = bypassTopic.trim()
-                  if (q) onEnterDirectly(q, q)
-                }}
-                whileHover={bypassTopic.trim() ? { scale: 1.03, boxShadow: '0 0 24px rgba(124,58,237,0.5)' } : {}}
-                whileTap={bypassTopic.trim() ? { scale: 0.97 } : {}}
-                transition={{ type: 'spring', stiffness: 380, damping: 24 }}
-                style={{
-                  padding: '10px', borderRadius: '8px', border: 'none',
-                  background: bypassTopic.trim()
-                    ? 'linear-gradient(135deg, rgba(167,72,255,0.85), rgba(124,58,237,0.9))'
-                    : 'rgba(124,58,237,0.18)',
-                  color: 'white', fontWeight: 700, fontSize: '12px',
-                  letterSpacing: '0.04em',
-                  cursor: bypassTopic.trim() ? 'pointer' : 'default',
-                  opacity: bypassTopic.trim() ? 1 : 0.35,
-                  boxShadow: bypassTopic.trim() ? '0 0 16px rgba(124,58,237,0.3)' : 'none',
-                }}
-              >
-                Enter classroom →
-              </motion.button>
+              <p style={{
+                margin: 0,
+                fontSize: '10px',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'rgba(205,190,255,0.44)',
+                position: 'relative',
+                zIndex: 1,
+              }}>
+                Press Enter to continue
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       <style>{`
-        .lm-bypass-input::placeholder { color: rgba(239,178,255,0.3); }
-        .lm-bypass-input:focus { border-color: rgba(167,72,255,0.5) !important; }
+        .lm-bypass-input::placeholder { color: rgba(205,205,226,0.5); }
+        .lm-bypass-input:focus {
+          border-color: rgba(211,189,255,0.78) !important;
+          box-shadow: inset 0 0 0 1px rgba(218,199,255,0.14), 0 0 0 3px rgba(124,58,237,0.22), 0 0 24px rgba(124,58,237,0.28), 0 10px 30px rgba(0,0,0,0.34) !important;
+          background: linear-gradient(180deg, rgba(32,32,44,0.95) 0%, rgba(20,20,30,0.95) 100%) !important;
+        }
       `}</style>
     </div>
   )

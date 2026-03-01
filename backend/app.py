@@ -20,6 +20,7 @@ GEMINI_API_KEY      = os.getenv("GEMINI_API_KEY", "")
 ELEVENLABS_API_KEY  = os.getenv("ELEVENLABS_API_KEY", "")
 ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")
 MANIM_API_URL       = os.getenv("MANIM_API_URL", "http://localhost:3001")
+RENDER_API_SECRET   = os.getenv("RENDER_API_SECRET", "")
 
 CACHE_DIR = Path(__file__).parent / "cache"
 (CACHE_DIR / "audio").mkdir(parents=True, exist_ok=True)
@@ -143,8 +144,10 @@ def render_manim():
         return send_file(str(cache_file), mimetype="video/mp4")
 
     try:
+        headers = {"Authorization": f"Bearer {RENDER_API_SECRET}"} if RENDER_API_SECRET else {}
         r = requests.post(f"{MANIM_API_URL}/generate",
-                          json={"context": context, "duration": duration}, timeout=120)
+                          json={"context": context, "duration": duration},
+                          headers=headers, timeout=120)
         r.raise_for_status()
         result = r.json()
     except Exception as e:

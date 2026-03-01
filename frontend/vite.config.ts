@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => {
   const xrEnv = env['XR_ENV']
 
   return {
+    server: {
+      port: 5174,
+      strictPort: true,
+    },
     resolve: {
       alias: {
         '@': new URL('./src', import.meta.url).pathname,

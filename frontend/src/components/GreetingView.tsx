@@ -9,13 +9,6 @@ const HERO_PHRASES = [
   'impossible to ignore.',
 ]
 
-const HUMANITY_TAGS = [
-  { label: 'human-first', top: '6%', left: '6%' },
-  { label: 'access', top: '18%', right: '8%' },
-  { label: 'equity', bottom: '18%', left: '10%' },
-  { label: 'clarity', bottom: '10%', right: '12%' },
-]
-
 interface Props {
   status: 'disconnected' | 'connecting' | 'connected'
   isSpeaking: boolean
@@ -35,7 +28,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, erro
   const lineOneRef = useRef<HTMLDivElement | null>(null)
   const phraseRef = useRef<HTMLSpanElement | null>(null)
   const subtitleRef = useRef<HTMLParagraphElement | null>(null)
-  const tagRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
     if (!phraseRef.current) {
@@ -51,11 +43,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, erro
 
       gsap.set(sentenceRef.current, { autoAlpha: 0, x: -88 })
       gsap.set(subtitleRef.current, { autoAlpha: 0, y: 16 })
-      gsap.set(tagRefs.current.filter(Boolean), {
-        autoAlpha: 0,
-        scale: 0.82,
-        y: 18,
-      })
       gsap.set(phraseRef.current, {
         autoAlpha: 0,
         x: -52,
@@ -79,18 +66,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, erro
           0.32,
         )
         .to(subtitleRef.current, { autoAlpha: 1, y: 0, duration: 0.6 }, 0.42)
-        .to(
-          tagRefs.current.filter(Boolean),
-          {
-            autoAlpha: 1,
-            scale: 1,
-            y: 0,
-            duration: 0.5,
-            stagger: 0.06,
-            ease: 'power2.out',
-          },
-          0.5,
-        )
 
       gsap.to(sentenceRef.current, {
         x: 10,
@@ -110,23 +85,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, erro
         duration: 3.8,
         ease: 'sine.inOut',
         delay: 1.35,
-      })
-
-      tagRefs.current.forEach((tag, index) => {
-        if (!tag) {
-          return
-        }
-
-        gsap.to(tag, {
-          y: index % 2 === 0 ? -8 : 8,
-          x: index % 2 === 0 ? 5 : -5,
-          rotate: index % 2 === 0 ? 1.5 : -1.5,
-          yoyo: true,
-          repeat: -1,
-          duration: 2.6 + index * 0.35,
-          ease: 'sine.inOut',
-          delay: 1 + index * 0.12,
-        })
       })
 
       let activeIndex = 0
@@ -201,40 +159,8 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, erro
           textAlign: 'center',
           zIndex: 1,
           width: 'min(90vw, 920px)',
-          position: 'relative',
         }}
       >
-        {HUMANITY_TAGS.map((tag, index) => (
-          <div
-            key={tag.label}
-            ref={(node) => {
-              tagRefs.current[index] = node
-            }}
-            style={{
-              position: 'absolute',
-              top: tag.top,
-              right: tag.right,
-              bottom: tag.bottom,
-              left: tag.left,
-              padding: '8px 12px',
-              borderRadius: '999px',
-              border: '1px solid rgba(200, 126, 255, 0.22)',
-              background: 'rgba(84, 26, 128, 0.18)',
-              color: '#dca6ff',
-              fontSize: '10px',
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              boxShadow: '0 0 18px rgba(145, 58, 255, 0.12)',
-              backdropFilter: 'blur(6px)',
-              pointerEvents: 'none',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {tag.label}
-          </div>
-        ))}
-
         <div
           ref={sentenceRef}
           style={{

@@ -7,6 +7,10 @@ import TopicsScene from './scenes/TopicsScene'
 import NotesScene from './scenes/NotesScene'
 
 const scene = new URLSearchParams(window.location.search).get('scene')
+const activeScene = scene ?? 'app'
+
+document.documentElement.dataset.luminaryScene = activeScene
+document.body.dataset.luminaryScene = activeScene
 
 let root
 if (scene === 'teacher') {

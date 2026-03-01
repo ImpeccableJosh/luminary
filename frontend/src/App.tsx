@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { useConversation } from '@elevenlabs/react'
 import { renderManim, createObjectUrl, summarizeText } from '@/lib/api'
 import GreetingView from '@/components/GreetingView'
@@ -47,6 +47,13 @@ export default function App() {
   const [textMode, setTextMode] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isSpaceMode, setIsSpaceMode] = useState(false)
+
+  useEffect(() => {
+    document.documentElement.dataset.luminaryLessonMode = isSpaceMode ? 'space' : 'default'
+    return () => {
+      delete document.documentElement.dataset.luminaryLessonMode
+    }
+  }, [isSpaceMode])
 
   // Tool: agent calls this when user tells it what they want to learn
   const handleStartLesson = useCallback(

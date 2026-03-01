@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react'
 import TeacherPanelTabs from '@/components/TeacherPanelTabs'
+import { SpatialSidePanel } from '@/components/spatial/SpatialClassroom'
 
 export default function TeacherScene() {
   const [isTalking, setIsTalking] = useState(false)
@@ -28,8 +29,13 @@ export default function TeacherScene() {
   }, [])
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: 'transparent' }}>
-      <TeacherPanelTabs isTalking={isTalking} isSpaceMode={isSpaceMode} />
+    <div style={{ width: '100vw', height: '100vh', background: 'transparent', padding: '10px' }}>
+      <SpatialSidePanel
+        kind={isSpaceMode ? 'solar' : 'teacher'}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <TeacherPanelTabs isTalking={isTalking} isSpaceMode={isSpaceMode} />
+      </SpatialSidePanel>
     </div>
   )
 }

@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react'
 import type { CompletedTopic } from '@/App'
 import TopicsPanel from '@/components/TopicsPanel'
+import { SpatialSidePanel } from '@/components/spatial/SpatialClassroom'
 
 export default function TopicsScene() {
   const [topics, setTopics] = useState<CompletedTopic[]>([])
@@ -33,12 +34,14 @@ export default function TopicsScene() {
   }
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: 'transparent' }}>
-      <TopicsPanel
-        topics={topics}
-        currentVideoUrl={currentVideoUrl}
-        onSelect={handleSelect}
-      />
+    <div style={{ width: '100vw', height: '100vh', background: 'transparent', padding: '10px' }}>
+      <SpatialSidePanel kind="topics" style={{ width: '100%', height: '100%' }}>
+        <TopicsPanel
+          topics={topics}
+          currentVideoUrl={currentVideoUrl}
+          onSelect={handleSelect}
+        />
+      </SpatialSidePanel>
     </div>
   )
 }

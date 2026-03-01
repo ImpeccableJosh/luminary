@@ -110,7 +110,9 @@ export default function ClassroomView({
 
     initScene('luminary-teacher', (cfg) => ({
       ...cfg,
-      defaultSize: { width: 400, height: 640 },
+      defaultSize: isSpaceMode
+        ? { width: 560, height: 780 }
+        : { width: 400, height: 640 },
     }))
     openSceneWindow('luminary-teacher', '?scene=teacher', (win) => { teacherWinRef.current = win })
 
@@ -123,7 +125,7 @@ export default function ClassroomView({
     // Notes scene — opened via link element (WebSpatial link-element API)
     initScene('luminary-notes', (cfg) => ({
       ...cfg,
-      defaultSize: { width: 820, height: 180 },
+      defaultSize: { width: 980, height: 240 },
     }))
     window.setTimeout(() => {
       if (!canceled) notesLinkRef.current?.click()

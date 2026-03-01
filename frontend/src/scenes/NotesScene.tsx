@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { gsap } from 'gsap'
 import { useRef } from 'react'
+import { SpatialSidePanel } from '@/components/spatial/SpatialClassroom'
 
 type NoteItem = { id: string; text: string; createdAt: number }
 
@@ -61,149 +62,158 @@ export default function NotesScene() {
       style={{
         width: '100vw',
         height: '100vh',
-        background: 'linear-gradient(160deg, rgba(124,58,237,0.08) 0%, rgba(92,32,180,0.04) 100%)',
-        display: 'flex',
-        overflow: 'hidden',
+        background: 'transparent',
+        padding: '10px',
       }}
     >
-      {/* ── Left: header + input ───────────────────────────────────── */}
-      <div style={{
-        width: '260px',
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '7px',
-        padding: '12px 12px 12px 14px',
-        borderRight: '1px solid rgba(167,72,255,0.1)',
-      }}>
-        <span style={{
-          fontSize: '9px',
-          fontWeight: 800,
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          color: '#efb2ff',
-          textShadow: '0 0 8px rgba(239,178,255,0.35)',
+      <SpatialSidePanel kind="notes" style={{ width: '100%', height: '100%' }}>
+        <div style={{
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(160deg, rgba(124,58,237,0.08) 0%, rgba(92,32,180,0.04) 100%)',
+          display: 'flex',
+          overflow: 'hidden',
         }}>
-          Notes
-        </span>
-
-        <div style={{ flex: 1, display: 'flex', gap: '6px', alignItems: 'stretch' }}>
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                e.preventDefault()
-                handleAddNote()
-              }
-            }}
-            placeholder="Type a note… (⌘+Enter to save)"
-            className="lm-notes-textarea"
-            style={{
-              flex: 1,
-              resize: 'none',
-              background: 'rgba(167,72,255,0.07)',
-              border: '1px solid rgba(167,72,255,0.18)',
-              borderRadius: '8px',
-              padding: '8px 10px',
-              color: 'white',
-              fontSize: '11px',
-              lineHeight: 1.45,
-              outline: 'none',
-              fontFamily: 'inherit',
-              transition: 'border-color 0.2s',
-            }}
-          />
-          <button
-            type="button"
-            onClick={handleAddNote}
-            disabled={isAddDisabled}
-            style={{
-              flexShrink: 0,
-              width: '30px',
-              borderRadius: '8px',
-              border: 'none',
-              background: isAddDisabled
-                ? 'rgba(124,58,237,0.14)'
-                : 'linear-gradient(135deg, rgba(167,72,255,0.82), rgba(124,58,237,0.9))',
-              color: 'white',
-              fontSize: '15px',
-              cursor: isAddDisabled ? 'default' : 'pointer',
-              opacity: isAddDisabled ? 0.35 : 1,
-              boxShadow: isAddDisabled ? 'none' : '0 0 10px rgba(124,58,237,0.28)',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            ↑
-          </button>
-        </div>
-      </div>
-
-      {/* ── Right: notes horizontal scroll ─────────────────────────── */}
-      <div style={{
-        flex: 1,
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '12px 14px',
-      }}>
-        {notes.length === 0 ? (
-          <p style={{
-            color: 'rgba(239,178,255,0.2)',
-            fontSize: '11px',
-            fontStyle: 'italic',
-            whiteSpace: 'nowrap',
-            margin: 0,
+          {/* ── Left: header + input ───────────────────────────────────── */}
+          <div style={{
+            width: '300px',
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '7px',
+            padding: '12px 12px 12px 14px',
+            borderRight: '1px solid rgba(167,72,255,0.1)',
           }}>
-            Saved notes will appear here
-          </p>
-        ) : (
-          [...notes].map((note) => (
-            <div
-              key={note.id}
-              style={{
-                flexShrink: 0,
-                width: '180px',
-                height: '100%',
-                padding: '8px 10px',
-                borderRadius: '10px',
-                background: 'rgba(167,72,255,0.08)',
-                border: '1px solid rgba(167,72,255,0.15)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                overflow: 'hidden',
-              }}
-            >
-              <p style={{
-                margin: 0,
-                fontSize: '11px',
-                color: 'rgba(239,178,255,0.85)',
-                lineHeight: 1.4,
-                wordBreak: 'break-word',
-                display: '-webkit-box',
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: 'vertical' as const,
-                overflow: 'hidden',
-              }}>
-                {note.text}
-              </p>
-              <p style={{
-                margin: '4px 0 0',
-                fontSize: '9px',
-                color: 'rgba(239,178,255,0.3)',
-              }}>
-                {new Date(note.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-              </p>
+            <span style={{
+              fontSize: '9px',
+              fontWeight: 800,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: '#efb2ff',
+              textShadow: '0 0 8px rgba(239,178,255,0.35)',
+            }}>
+              Notes
+            </span>
+
+            <div style={{ flex: 1, display: 'flex', gap: '6px', alignItems: 'stretch' }}>
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    e.preventDefault()
+                    handleAddNote()
+                  }
+                }}
+                placeholder="Type a note… (⌘+Enter to save)"
+                className="lm-notes-textarea"
+                style={{
+                  flex: 1,
+                  resize: 'none',
+                  background: 'rgba(167,72,255,0.07)',
+                  border: '1px solid rgba(167,72,255,0.18)',
+                  borderRadius: '8px',
+                  padding: '8px 10px',
+                  color: 'white',
+                  fontSize: '11px',
+                  lineHeight: 1.45,
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  transition: 'border-color 0.2s',
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleAddNote}
+                disabled={isAddDisabled}
+                style={{
+                  flexShrink: 0,
+                  width: '32px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: isAddDisabled
+                    ? 'rgba(124,58,237,0.14)'
+                    : 'linear-gradient(135deg, rgba(167,72,255,0.82), rgba(124,58,237,0.9))',
+                  color: 'white',
+                  fontSize: '15px',
+                  cursor: isAddDisabled ? 'default' : 'pointer',
+                  opacity: isAddDisabled ? 0.35 : 1,
+                  boxShadow: isAddDisabled ? 'none' : '0 0 10px rgba(124,58,237,0.28)',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                ↑
+              </button>
             </div>
-          ))
-        )}
-      </div>
+          </div>
+
+          {/* ── Right: notes horizontal scroll ─────────────────────────── */}
+          <div style={{
+            flex: 1,
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '12px 14px',
+          }}>
+            {notes.length === 0 ? (
+              <p style={{
+                color: 'rgba(239,178,255,0.2)',
+                fontSize: '11px',
+                fontStyle: 'italic',
+                whiteSpace: 'nowrap',
+                margin: 0,
+              }}>
+                Saved notes will appear here
+              </p>
+            ) : (
+              [...notes].map((note) => (
+                <div
+                  key={note.id}
+                  style={{
+                    flexShrink: 0,
+                    width: '200px',
+                    height: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    background: 'rgba(167,72,255,0.08)',
+                    border: '1px solid rgba(167,72,255,0.15)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <p style={{
+                    margin: 0,
+                    fontSize: '11px',
+                    color: 'rgba(239,178,255,0.85)',
+                    lineHeight: 1.4,
+                    wordBreak: 'break-word',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical' as const,
+                    overflow: 'hidden',
+                  }}>
+                    {note.text}
+                  </p>
+                  <p style={{
+                    margin: '4px 0 0',
+                    fontSize: '9px',
+                    color: 'rgba(239,178,255,0.3)',
+                  }}>
+                    {new Date(note.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </SpatialSidePanel>
 
       <style>{`
         .lm-notes-textarea::placeholder { color: rgba(239,178,255,0.25); }

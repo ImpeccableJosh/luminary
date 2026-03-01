@@ -15,7 +15,6 @@ export default function LoadingScene({ label, mode = 'fill' }: Props) {
   const rootRef    = useRef<HTMLDivElement>(null)
   const glowRef    = useRef<HTMLDivElement>(null)
   const labelRef   = useRef<HTMLParagraphElement>(null)
-  const brandRef   = useRef<HTMLSpanElement>(null)
 
   // Fade in on mount
   useEffect(() => {
@@ -58,21 +57,6 @@ export default function LoadingScene({ label, mode = 'fill' }: Props) {
       t.kill()
     }
   }, [label])
-
-  // Brand drift (overlay mode only)
-  useEffect(() => {
-    const el = brandRef.current
-    if (!el) return
-    const drift = () => gsap.to(el, {
-      x: gsap.utils.random(-2.5, 2.5),
-      y: gsap.utils.random(-1.5, 1.5),
-      duration: gsap.utils.random(1.8, 3.2),
-      ease: 'sine.inOut',
-      onComplete: drift,
-    })
-    drift()
-    return () => gsap.killTweensOf(el)
-  }, [])
 
   // ── OVERLAY mode ─────────────────────────────────────────────────────────
   if (mode === 'overlay') {
@@ -132,22 +116,6 @@ export default function LoadingScene({ label, mode = 'fill' }: Props) {
             pointerEvents: 'none',
           }} />
         </div>
-
-        {/* Brand label */}
-        <span
-          ref={brandRef}
-          style={{
-            marginTop: '8px',
-            fontSize: '16px',
-            fontWeight: 800,
-            letterSpacing: '-0.02em',
-            color: '#efb2ff',
-            textShadow: '0 0 2px rgba(255,236,255,0.9), 0 0 18px rgba(239,178,255,0.45), 0 0 36px rgba(167,72,255,0.28)',
-            userSelect: 'none',
-          }}
-        >
-          luminary
-        </span>
 
         {/* Status label */}
         {label && (

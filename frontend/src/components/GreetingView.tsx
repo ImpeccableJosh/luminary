@@ -6,7 +6,7 @@ const HERO_PHRASES = [
   'clear at last.',
   'like it clicks.',
   'made for you.',
-  'impossible to ignore.',
+  'unmissable.',
 ]
 
 interface Props {
@@ -32,7 +32,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
   const sentenceRef = useRef<HTMLDivElement | null>(null)
   const lineOneRef = useRef<HTMLDivElement | null>(null)
   const phraseRef = useRef<HTMLSpanElement | null>(null)
-  const subtitleRef = useRef<HTMLParagraphElement | null>(null)
 
   useEffect(() => {
     if (!phraseRef.current) {
@@ -47,7 +46,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
       phraseRef.current.textContent = HERO_PHRASES[0]
 
       gsap.set(sentenceRef.current, { autoAlpha: 0, x: -88 })
-      gsap.set(subtitleRef.current, { autoAlpha: 0, y: 16 })
       gsap.set(phraseRef.current, {
         autoAlpha: 0,
         x: -52,
@@ -70,7 +68,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
           },
           0.32,
         )
-        .to(subtitleRef.current, { autoAlpha: 1, y: 0, duration: 0.6 }, 0.42)
 
       gsap.to(sentenceRef.current, {
         x: 10,
@@ -235,19 +232,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
             </span>
           </div>
         </div>
-
-        <p
-          ref={subtitleRef}
-          style={{
-            marginTop: '24px',
-            color: 'rgba(255,255,255,0.26)',
-            fontSize: '12px',
-            fontWeight: 500,
-            letterSpacing: '0.06em',
-          }}
-        >
-          Built for the moment something impossible suddenly makes sense.
-        </p>
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>

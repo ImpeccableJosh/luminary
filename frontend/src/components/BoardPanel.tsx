@@ -1,5 +1,7 @@
 // BoardPanel — the middle panel: shows Manim videos and a loading state
 
+import LoadingScene from './LoadingScene'
+
 interface Props {
   videoUrl: string | null
   isRendering: boolean
@@ -11,9 +13,9 @@ export default function BoardPanel({ videoUrl, isRendering, topic }: Props) {
     <div style={{
       width: '100%',
       height: '100%',
-      background: 'linear-gradient(160deg, #0f1a2a 0%, #0a1020 100%)',
+      background: 'linear-gradient(160deg, #06060b 0%, #09090f 100%)',
       borderRadius: '16px',
-      border: '1px solid rgba(255,255,255,0.07)',
+      border: '1px solid rgba(167,72,255,0.1)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
@@ -22,19 +24,29 @@ export default function BoardPanel({ videoUrl, isRendering, topic }: Props) {
       {/* Header bar */}
       <div style={{
         padding: '12px 18px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid rgba(167,72,255,0.08)',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
         flexShrink: 0,
+        position: 'relative',
+        zIndex: 2,
       }}>
         <div style={{
-          width: '8px', height: '8px', borderRadius: '50%',
-          background: videoUrl ? '#4ade80' : isRendering ? '#fbbf24' : 'rgba(255,255,255,0.2)',
-          boxShadow: videoUrl ? '0 0 8px rgba(74,222,128,0.6)' : isRendering ? '0 0 8px rgba(251,191,36,0.6)' : 'none',
+          width: '7px', height: '7px', borderRadius: '50%',
+          background: videoUrl ? '#4ade80' : isRendering ? '#fbbf24' : 'rgba(167,72,255,0.4)',
+          boxShadow: videoUrl
+            ? '0 0 8px rgba(74,222,128,0.6)'
+            : isRendering
+            ? '0 0 8px rgba(251,191,36,0.6)'
+            : '0 0 6px rgba(167,72,255,0.35)',
           transition: 'all 0.3s',
         }} />
-        <span style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.05em' }}>
+        <span style={{
+          fontSize: '12px', fontWeight: 600,
+          color: 'rgba(239,178,255,0.45)',
+          letterSpacing: '0.05em',
+        }}>
           {isRendering ? 'Rendering…' : videoUrl ? 'Animation' : topic}
         </span>
       </div>
@@ -50,28 +62,13 @@ export default function BoardPanel({ videoUrl, isRendering, topic }: Props) {
             autoPlay
             loop
             playsInline
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-            }}
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
         )}
 
-        {/* Rendering spinner */}
+        {/* Loading scene — replaces the old spinner */}
         {isRendering && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-            <div style={{
-              width: '48px', height: '48px',
-              border: '3px solid rgba(255,255,255,0.08)',
-              borderTopColor: 'rgba(124,58,237,0.8)',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-            }} />
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px', fontStyle: 'italic' }}>
-              Generating animation…
-            </p>
-          </div>
+          <LoadingScene label="Generating animation…" mode="fill" />
         )}
 
         {/* Empty state */}
@@ -80,7 +77,7 @@ export default function BoardPanel({ videoUrl, isRendering, topic }: Props) {
             <p style={{
               fontSize: 'clamp(2rem, 4vw, 3rem)',
               fontWeight: 800,
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))',
+              background: 'linear-gradient(135deg, rgba(239,178,255,0.16), rgba(167,72,255,0.07))',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               letterSpacing: '-0.03em',
@@ -89,14 +86,12 @@ export default function BoardPanel({ videoUrl, isRendering, topic }: Props) {
             }}>
               luminary
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px' }}>
+            <p style={{ color: 'rgba(239,178,255,0.2)', fontSize: '12px' }}>
               Animations will appear here as you learn
             </p>
           </div>
         )}
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }

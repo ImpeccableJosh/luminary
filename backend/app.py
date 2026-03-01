@@ -31,11 +31,80 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 GEMINI_MODEL = "gemini-2.0-flash-exp"
 
 
+SUMMARY_SYSTEM = """
+You write ultra-concise study notes for a lesson history sidebar.
+Turn the provided raw text (often an animation prompt) into a helpful summary.
+
+Return ONLY valid JSON (no markdown):
+{
+    "summary": "<1-2 sentence learner-friendly summary>",
+    "keyPoints": ["<optional short bullets>"]
+}
+
+Rules:
+- summary must be <= 160 characters if possible.
+- Avoid quoting the original prompt verbatim.
+- Prefer the actual concept over describing that we 'animate' something.
+- keyPoints: 0-3 items, each <= 60 characters.
+"""
+
+
 def md5(text):
     return hashlib.md5(text.encode()).hexdigest()
 
 def cache_path(subdir, key, ext):
     return CACHE_DIR / subdir / f"{key}{ext}"
+
+
+def _gemini_summary(text: str):
+    try:
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=f"Summarize this for lesson history: {text}",
+            config=types.GenerateContentConfig(
+                system_instruction=SUMMARY_SYSTEM,
+                response_mime_type="application/json",
+                temperature=0.3,
+            ),
+        )
+        raw = response.text.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        data = json.loads(raw)
+        summary = str(data.get("summary", "")).strip()
+        key_points = data.get("keyPoints", [])
+        if not summary:
+            return None
+        if not isinstance(key_points, list):
+            key_points = []
+        key_points = [str(x).strip() for x in key_points if str(x).strip()]
+        return {"summary": summary, "keyPoints": key_points[:3]}
+    except Exception as e:
+        print(f"[Gemini summary] {e}")
+        return None
+
+
+@app.route("/summarize", methods=["POST"])
+def summarize():
+    data = request.get_json(force=True)
+    text = str(data.get("text", "")).strip()
+    if not text:
+        return jsonify({"error": "text is required"}), 400
+
+    key = md5(f"summary::{text}")
+    cache_file = cache_path("lessons", f"summary_{key}", ".json")
+    if cache_file.exists():
+        return jsonify(json.loads(cache_file.read_text()))
+
+    result = _gemini_summary(text)
+    if not result:
+        # Simple deterministic fallback: strip 'animate' framing.
+        cleaned = text.replace("Animate", "").replace("animate", "").strip()
+        summary = cleaned
+        if len(summary) > 160:
+            summary = summary[:157] + "…"
+        result = {"summary": summary, "keyPoints": []}
+
+    cache_file.write_text(json.dumps(result))
+    return jsonify(result)
 
 
 # ── Lesson generation ──────────────────────────────────────────────────────

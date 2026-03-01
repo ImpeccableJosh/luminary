@@ -4,15 +4,21 @@
 
 import { useState, useEffect } from 'react'
 import TeacherPanel from '@/components/TeacherPanel'
+import SpaceTeacherPanel from '@/components/SpaceTeacherPanel'
 
 export default function TeacherScene() {
   const [isTalking, setIsTalking] = useState(false)
+  const [isSpaceMode, setIsSpaceMode] = useState(false)
 
   useEffect(() => {
     const channel = new BroadcastChannel('luminary-scene-sync')
+    channel.postMessage({ type: 'teacher-scene-ready' })
     const onMessage = (e: MessageEvent) => {
       if (e.data?.type === 'teacher-state') {
         setIsTalking(e.data.isTalking)
+      }
+      if (e.data?.type === 'teacher-mode') {
+        setIsSpaceMode(Boolean(e.data.isSpaceMode))
       }
     }
     channel.addEventListener('message', onMessage)
@@ -24,7 +30,7 @@ export default function TeacherScene() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: 'transparent' }}>
-      <TeacherPanel isTalking={isTalking} />
+      {isSpaceMode ? <SpaceTeacherPanel isTalking={isTalking} /> : <TeacherPanel isTalking={isTalking} />}
     </div>
   )
 }

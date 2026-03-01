@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { gsap } from 'gsap'
+import LoadingScene from './LoadingScene'
 
 const MIC_VIDEO_SRC = '/mic-cta.mp4'
 const WAVE_BAR_COUNT = 7
@@ -8,12 +9,6 @@ const MIC_FRAGMENT_CLIPS = [
   'polygon(50% 0, 100% 0, 100% 50%, 50% 50%)',
   'polygon(0 50%, 50% 50%, 50% 100%, 0 100%)',
   'polygon(50% 50%, 100% 50%, 100% 100%, 50% 100%)',
-] as const
-const MIC_FRAGMENT_BURST = [
-  { x: -22, y: -20, rotate: -16 },
-  { x: 24, y: -18, rotate: 14 },
-  { x: -20, y: 22, rotate: 18 },
-  { x: 22, y: 20, rotate: -14 },
 ] as const
 const WAVE_AMPLITUDES = [0.52, 0.74, 0.98, 1.18, 0.98, 0.74, 0.52] as const
 
@@ -40,7 +35,7 @@ function buildWaveKeyframes(index: number) {
 }
 
 interface Props {
-  status: 'disconnected' | 'connecting' | 'connected'
+  status: 'disconnected' | 'connecting' | 'connected' | 'disconnecting'
   isSpeaking: boolean
   onStart: () => void
   onStop: () => void
@@ -56,7 +51,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
   const [isWaveformMode, setIsWaveformMode] = useState(false)
   const [showBypass, setShowBypass] = useState(false)
   const [bypassTopic, setBypassTopic] = useState('')
-  const [bypassSubject, setBypassSubject] = useState('')
 
   const heroRef = useRef<HTMLDivElement | null>(null)
   const sentenceRef = useRef<HTMLDivElement | null>(null)
@@ -407,7 +401,7 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
 
     if (isWaveformMode) {
       gsap.set(fragments, {
-        autoAlpha: 0.9,
+        autoAlpha: 0.75,
         x: 0,
         y: 0,
         rotate: 0,
@@ -415,12 +409,13 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
       })
       gsap.set(waveformRef.current, {
         autoAlpha: 0,
-        scale: 0.58,
-        filter: 'blur(12px)',
+        scale: 0.9,
+        filter: 'blur(6px)',
       })
       gsap.set(waveBars, {
         transformOrigin: '50% 100%',
-        scaleY: 0.28,
+        scaleY: 0.18,
+        autoAlpha: 0.2,
       })
 
       const morphIn = gsap.timeline({ defaults: { overwrite: 'auto' } })
@@ -429,11 +424,11 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
         .to(
           micVisualRef.current,
           {
-            autoAlpha: 0.06,
-            scale: 0.72,
-            filter: 'blur(10px)',
-            duration: 0.3,
-            ease: 'power2.in',
+            autoAlpha: 0.14,
+            scale: 0.9,
+            filter: 'blur(4px)',
+            duration: 0.52,
+            ease: 'sine.inOut',
           },
           0,
         )
@@ -441,54 +436,55 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
           fragments,
           {
             autoAlpha: 0,
-            x: (_index, element) => {
-              const fragmentIndex = fragments.indexOf(element as HTMLDivElement)
-              return MIC_FRAGMENT_BURST[fragmentIndex]?.x ?? 0
-            },
-            y: (_index, element) => {
-              const fragmentIndex = fragments.indexOf(element as HTMLDivElement)
-              return MIC_FRAGMENT_BURST[fragmentIndex]?.y ?? 0
-            },
-            rotate: (_index, element) => {
-              const fragmentIndex = fragments.indexOf(element as HTMLDivElement)
-              return MIC_FRAGMENT_BURST[fragmentIndex]?.rotate ?? 0
-            },
-            scale: 0.84,
-            duration: 0.42,
-            ease: 'power3.out',
-            stagger: 0.02,
+            x: 0,
+            y: 0,
+            rotate: 0,
+            scale: 0.92,
+            duration: 0.56,
+            ease: 'sine.out',
+            stagger: 0.03,
           },
-          0.02,
+          0,
         )
         .to(
           waveformRef.current,
           {
-            autoAlpha: 1,
+            autoAlpha: 0.88,
             scale: 1,
             filter: 'blur(0px)',
-            duration: 0.38,
-            ease: 'expo.out',
+            duration: 0.62,
+            ease: 'sine.out',
+          },
+          0.06,
+        )
+        .to(
+          waveBars,
+          {
+            autoAlpha: 1,
+            duration: 0.5,
+            ease: 'sine.out',
+            stagger: 0.01,
           },
           0.14,
         )
         .to(
           micGlowRef.current,
           {
-            autoAlpha: 0.42,
-            scale: 1.08,
-            duration: 0.34,
-            ease: 'power2.out',
+            autoAlpha: 0.34,
+            scale: 1.02,
+            duration: 0.58,
+            ease: 'sine.out',
           },
-          0.08,
+          0.06,
         )
         .to(
           micTintRef.current,
           {
-            autoAlpha: 0.26,
-            duration: 0.3,
-            ease: 'power2.out',
+            autoAlpha: 0.2,
+            duration: 0.56,
+            ease: 'sine.out',
           },
-          0.08,
+          0.06,
         )
 
       waveTweensRef.current = waveBars.map((bar, index) => gsap.to(bar, {
@@ -514,10 +510,19 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
         waveformRef.current,
         {
           autoAlpha: 0,
-          scale: 0.72,
-          filter: 'blur(10px)',
-          duration: 0.22,
-          ease: 'power2.in',
+          scale: 0.88,
+          filter: 'blur(6px)',
+          duration: 0.38,
+          ease: 'sine.inOut',
+        },
+        0,
+      )
+      .to(
+        waveBars,
+        {
+          autoAlpha: 0.2,
+          duration: 0.3,
+          ease: 'sine.inOut',
         },
         0,
       )
@@ -527,29 +532,29 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
           autoAlpha: 1,
           scale: 1,
           filter: 'blur(0px)',
-          duration: 0.34,
-          ease: 'expo.out',
+          duration: 0.52,
+          ease: 'sine.out',
         },
-        0.08,
+        0.04,
       )
       .to(
         micGlowRef.current,
         {
           autoAlpha: 0.18,
           scale: 0.94,
-          duration: 0.28,
-          ease: 'power2.out',
+          duration: 0.42,
+          ease: 'sine.out',
         },
-        0.08,
+        0.04,
       )
       .to(
         micTintRef.current,
         {
           autoAlpha: 0.08,
-          duration: 0.28,
-          ease: 'power2.out',
+          duration: 0.42,
+          ease: 'sine.out',
         },
-        0.08,
+        0.04,
       )
   }, [isWaveformMode])
 
@@ -573,9 +578,9 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
       })
 
       gsap.to(waveformRef.current, {
-        autoAlpha: 0.72,
-        duration: 0.36,
-        ease: 'power2.out',
+        autoAlpha: 0.76,
+        duration: 0.46,
+        ease: 'sine.inOut',
         overwrite: 'auto',
       })
 
@@ -584,13 +589,13 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
 
     gsap.to(waveformRef.current, {
       autoAlpha: 1,
-      duration: 0.28,
-      ease: 'power2.out',
+      duration: 0.5,
+      ease: 'sine.inOut',
       overwrite: 'auto',
     })
 
     waveTweensRef.current.forEach((tween, index) => {
-      tween.progress((index * 0.07) % 1)
+      tween.timeScale(0.94 + (index * 0.01))
       tween.play()
     })
   }, [isSpeaking, isWaveformMode])
@@ -663,6 +668,10 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
         backgroundColor: isSpatial ? 'transparent' : '#000000',
       }}
     >
+      {/* Loading overlay — shown while connecting to the agent */}
+      {isConnecting && (
+        <LoadingScene mode="overlay" label="Connecting to luminary…" />
+      )}
       <div
         ref={heroRef}
         style={{
@@ -751,9 +760,7 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
             letterSpacing: '0.18em',
             textTransform: 'none',
           }}
-        >
-          Built for the kid who never had a great teacher.
-        </p>
+        />
       </div>
 
       <div
@@ -1003,60 +1010,66 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
         )}
 
         {showBypass && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              const t = bypassTopic.trim()
-              const s = bypassSubject.trim()
-              if (t && s) onEnterDirectly(t, s)
-            }}
+          <div
             style={{
               display: 'flex', flexDirection: 'column', gap: '8px',
               padding: '14px', borderRadius: '12px',
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
-              width: '260px',
+              width: '280px',
             }}
           >
             <input
-              placeholder="Topic  (e.g. Pythagorean theorem)"
+              autoFocus
+              placeholder="What do you want to learn?"
               value={bypassTopic}
               onChange={(e) => setBypassTopic(e.target.value)}
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '7px', padding: '8px 11px',
-                color: 'white', fontSize: '12px', outline: 'none',
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  const q = bypassTopic.trim()
+                  if (q) onEnterDirectly(q, q)
+                }
               }}
-            />
-            <input
-              placeholder="Subject  (e.g. Mathematics)"
-              value={bypassSubject}
-              onChange={(e) => setBypassSubject(e.target.value)}
+              className="lm-bypass-input"
               style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '7px', padding: '8px 11px',
-                color: 'white', fontSize: '12px', outline: 'none',
+                background: 'rgba(167,72,255,0.08)',
+                border: '1px solid rgba(167,72,255,0.22)',
+                borderRadius: '8px', padding: '10px 13px',
+                color: 'white', fontSize: '13px', outline: 'none',
+                transition: 'border-color 0.2s',
               }}
             />
             <button
-              type="submit"
-              disabled={!bypassTopic.trim() || !bypassSubject.trim()}
+              type="button"
+              disabled={!bypassTopic.trim()}
+              onClick={() => {
+                const q = bypassTopic.trim()
+                if (q) onEnterDirectly(q, q)
+              }}
               style={{
-                padding: '9px', borderRadius: '7px', border: 'none',
-                background: 'rgba(124,58,237,0.65)',
-                color: 'white', fontWeight: 600, fontSize: '12px',
-                cursor: bypassTopic.trim() && bypassSubject.trim() ? 'pointer' : 'default',
-                opacity: bypassTopic.trim() && bypassSubject.trim() ? 1 : 0.35,
-                transition: 'opacity 0.2s',
+                padding: '10px', borderRadius: '8px', border: 'none',
+                background: bypassTopic.trim()
+                  ? 'linear-gradient(135deg, rgba(167,72,255,0.85), rgba(124,58,237,0.9))'
+                  : 'rgba(124,58,237,0.18)',
+                color: 'white', fontWeight: 700, fontSize: '12px',
+                letterSpacing: '0.04em',
+                cursor: bypassTopic.trim() ? 'pointer' : 'default',
+                opacity: bypassTopic.trim() ? 1 : 0.35,
+                transition: 'all 0.2s',
+                boxShadow: bypassTopic.trim() ? '0 0 16px rgba(124,58,237,0.3)' : 'none',
               }}
             >
               Enter classroom →
             </button>
-          </form>
+          </div>
         )}
       </div>
+
+      <style>{`
+        .lm-bypass-input::placeholder { color: rgba(239,178,255,0.3); }
+        .lm-bypass-input:focus { border-color: rgba(167,72,255,0.5) !important; }
+      `}</style>
     </div>
   )
 }

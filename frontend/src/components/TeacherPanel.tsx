@@ -1,120 +1,85 @@
-// TeacherPanel — 3D teacher using WebSpatial Reality/ModelAsset/ModelEntity
-// Mirrors the approach from 3d-main/src/App.tsx.
-// Models are symlinked from 3d-main/public/models/teacher/ via npm run setup:models
+// TeacherPanel — Three.js teacher with FBX breathing-idle animation.
+// Starts in idle by default and speeds up slightly while speaking.
 
-import { useEffect, useRef, useState } from 'react'
-import { gsap } from 'gsap'
-import {
-  ModelAsset,
-  ModelEntity,
-  Reality,
-  SceneGraph,
-} from '@webspatial/react-sdk'
-
-type AnimationId = 'idle' | 'happyIdle' | 'talkingOne' | 'talkingTwo'
-
-const ANIMATIONS = {
-  idle:       { id: 'teacher-idle',        src: `${__XR_ENV_BASE__}/models/teacher/idle-apple.usdz` },
-  happyIdle:  { id: 'teacher-happy-idle',  src: `${__XR_ENV_BASE__}/models/teacher/happy-idle-apple.usdz` },
-  talkingOne: { id: 'teacher-talking-one', src: `${__XR_ENV_BASE__}/models/teacher/talking-apple.usdz` },
-  talkingTwo: { id: 'teacher-talking-two', src: `${__XR_ENV_BASE__}/models/teacher/talking2-apple.usdz` },
-} satisfies Record<AnimationId, { id: string; src: string }>
-
-function nextTalking(current: AnimationId | null): AnimationId {
-  return current === 'talkingOne' ? 'talkingTwo' : 'talkingOne'
-}
+import { Suspense, useEffect, useMemo, useRef } from 'react'
+import { Canvas, useLoader } from '@react-three/fiber'
+import { useAnimations } from '@react-three/drei'
+import { Group } from 'three'
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'
 
 interface Props {
   isTalking: boolean
 }
 
-export default function TeacherPanel({ isTalking }: Props) {
-  const [activeTalking, setActiveTalking] = useState<AnimationId | null>(null)
-  const [displayAnim, setDisplayAnim] = useState<AnimationId>('idle')
-  const motionRef = useRef<HTMLDivElement | null>(null)
-  const stageRef = useRef<HTMLDivElement | null>(null)
+// ── Inner mesh component (runs inside <Canvas>) ───────────────────────────
+function TeacherModel({ isTalking }: Props) {
+  const sourceFbx = useLoader(FBXLoader, '/models/teacher/idle.fbx')
+  const model = useMemo(() => sourceFbx.clone(), [sourceFbx])
+  const groupRef = useRef<Group>(null)
+  const { actions, mixer } = useAnimations(model.animations, groupRef)
 
-  // Talking animation alternator
+  // Start idle animation (preferred by name, else first clip)
   useEffect(() => {
-    if (!isTalking) {
-      setActiveTalking(null)
-      return
+    const all = Object.values(actions).filter(
+      (action): action is NonNullable<(typeof actions)[string]> => action !== null,
+    )
+    if (!all.length) return
+    const idleByName = all.find((action) => action.getClip().name.toLowerCase().includes('idle'))
+    const idleAction = idleByName ?? all[0]
+
+    all.forEach((action) => action.stop())
+    idleAction.reset().fadeIn(0.35).play()
+
+    return () => {
+      all.forEach((action) => action.fadeOut(0.2))
     }
-    // Pick immediately on talk start
-    setActiveTalking((prev) => nextTalking(prev))
-    // Alternate every 2.6 s to avoid repetition
-    const timer = window.setInterval(() => {
-      setActiveTalking((prev) => nextTalking(prev))
-    }, 2600)
-    return () => window.clearInterval(timer)
-  }, [isTalking])
+  }, [actions])
 
-  // Compute target animation
-  const targetAnim: AnimationId = isTalking && activeTalking
-    ? activeTalking
-    : 'idle'
-
-  // GSAP fade transition when target animation changes
+  // Speed up animation slightly while speaking; reset on silence
   useEffect(() => {
-    const el = stageRef.current
-    if (!el) return
-    gsap.to(el, {
-      opacity: 0,
-      duration: 0.25,
-      ease: 'power2.in',
-      onComplete: () => {
-        setDisplayAnim(targetAnim)
-        gsap.to(el, { opacity: 1, duration: 0.35, ease: 'power2.out' })
-      },
-    })
-  }, [targetAnim])
+    mixer.timeScale = isTalking ? 1.25 : 1.0
+  }, [isTalking, mixer])
 
-  // GSAP floating motion
-  useEffect(() => {
-    const el = motionRef.current
-    if (!el) return
-    const floatY = isTalking ? -6 : -2
-    const tween = gsap.to(el, {
-      y: floatY,
-      duration: isTalking ? 1.2 : 2.0,
-      ease: 'sine.inOut',
-      yoyo: true,
-      repeat: -1,
-    })
-    return () => { tween.kill() }
-  }, [isTalking])
+  return (
+    <group ref={groupRef}>
+      <primitive
+        object={model}
+        scale={0.01}
+        position={[0, -0.9, 0]}
+      />
+    </group>
+  )
+}
 
-  const activeAnim = ANIMATIONS[displayAnim]
-
+// ── Panel shell (regular DOM + Canvas) ───────────────────────────────────
+export default function TeacherPanel({ isTalking }: Props) {
   return (
     <div style={{
       width: '100%',
       height: '100%',
-      background: 'transparent',
       position: 'relative',
+      borderRadius: '12px',
+      overflow: 'hidden',
+      background: 'linear-gradient(180deg, #0d0d1a 0%, #1a0a2e 60%, #0f1a2e 100%)',
     }}>
-      <div ref={motionRef} style={{ width: '100%', height: '100%' }}>
-        <div ref={stageRef} style={{ width: '100%', height: '100%' }}>
-          <Reality style={{ width: '100%', height: '100%', background: 'transparent' }}>
-            {/* Pre-load all four animations */}
-            {Object.values(ANIMATIONS).map((anim) => (
-              <ModelAsset key={anim.id} id={anim.id} src={anim.src} />
-            ))}
+      <Canvas
+        camera={{ position: [0, 0.8, 3.5], fov: 50 }}
+        gl={{ antialias: true }}
+        shadows={false}
+        style={{ width: '100%', height: '100%' }}
+      >
+        {/* Key light */}
+        <ambientLight intensity={0.55} />
+        <directionalLight position={[2, 4, 3]} intensity={1.2} />
+        {/* Cool fill from behind for depth */}
+        <directionalLight position={[-1, 1, -2]} intensity={0.25} color="#4466ff" />
 
-            <SceneGraph>
-              <ModelEntity
-                key={activeAnim.id}
-                model={activeAnim.id}
-                position={{ x: 0, y: -0.18, z: 0.1 }}
-                rotation={{ x: 0, y: 30, z: 0 }}
-                scale={{ x: 0.16, y: 0.16, z: 0.16 }}
-              />
-            </SceneGraph>
-          </Reality>
-        </div>
-      </div>
+        <Suspense fallback={null}>
+          <TeacherModel isTalking={isTalking} />
+        </Suspense>
+      </Canvas>
 
-      {/* Label */}
+      {/* Status label */}
       <div style={{
         position: 'absolute',
         bottom: '16px',
@@ -128,7 +93,7 @@ export default function TeacherPanel({ isTalking }: Props) {
           fontWeight: 700,
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
-          color: 'rgba(164,228,255,0.5)',
+          color: isTalking ? 'rgba(74,222,128,0.8)' : 'rgba(164,228,255,0.5)',
         }}>
           {isTalking ? 'Speaking' : 'Listening'}
         </span>

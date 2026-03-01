@@ -14,29 +14,56 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
     <div style={{
       width: '100%',
       height: '100%',
-      background: 'rgba(255,255,255,0.025)',
+      background: 'linear-gradient(180deg, rgba(124,58,237,0.10) 0%, rgba(255,255,255,0.02) 55%, rgba(255,255,255,0.015) 100%)',
       borderRadius: '16px',
-      border: '1px solid rgba(255,255,255,0.07)',
+      border: '1px solid rgba(167,139,250,0.18)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
     }}>
       {/* Header */}
       <div style={{
-        padding: '12px 16px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        padding: '18px 14px 14px',
+        borderBottom: '1px solid rgba(167,139,250,0.12)',
         flexShrink: 0,
+        textAlign: 'center',
       }}>
         <p style={{
-          fontSize: '10px',
-          fontWeight: 700,
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          color: 'rgba(164,228,255,0.6)',
+          margin: 0,
+          fontSize: '22px',
+          fontWeight: 900,
+          letterSpacing: '-0.02em',
+          // Flowing purple gradient text
+          // A tiled gradient where the start == end, so the loop is seamless.
+          backgroundImage: 'repeating-linear-gradient(90deg, rgba(124,58,237,0.95) 0%, rgba(196,181,253,0.95) 30%, rgba(124,58,237,0.95) 60%, rgba(124,58,237,0.95) 100%)',
+          backgroundSize: '200% 100%',
+          backgroundPosition: '0% 50%',
+          willChange: 'background-position',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          color: 'transparent',
+          filter: 'drop-shadow(0 0 6px rgba(124,58,237,0.14))',
+          animation: 'lessonHistoryFlow 4.8s linear infinite',
         }}>
           Lesson History
         </p>
+        <p style={{
+          margin: '6px 0 0',
+          fontSize: '12px',
+          fontWeight: 500,
+          lineHeight: 1.25,
+          color: 'rgba(196,181,253,0.75)',
+        }}>
+          Quick recap of what you covered.
+        </p>
       </div>
+
+      <style>{`
+        @keyframes lessonHistoryFlow {
+          0% { background-position: 0% 50%; }
+          100% { background-position: -200% 50%; }
+        }
+      `}</style>
 
       {/* Topic list */}
       <div style={{
@@ -70,10 +97,10 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
                 textAlign: 'left',
                 padding: '10px 12px',
                 borderRadius: '10px',
-                border: `1px solid ${isActive ? 'rgba(124,58,237,0.5)' : 'transparent'}`,
+                border: `1px solid ${isActive ? 'rgba(167,139,250,0.55)' : 'rgba(255,255,255,0.03)'}`,
                 background: isActive
-                  ? 'rgba(124,58,237,0.2)'
-                  : 'rgba(255,255,255,0.03)',
+                  ? 'rgba(124,58,237,0.22)'
+                  : 'rgba(255,255,255,0.025)',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
                 display: 'flex',
@@ -81,10 +108,10 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
                 gap: '10px',
               }}
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                if (!isActive) e.currentTarget.style.background = 'rgba(167,139,250,0.08)'
               }}
               onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+                if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.025)'
               }}
             >
               {/* Index badge */}
@@ -105,15 +132,53 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
                 {topics.length - i}
               </span>
 
-              <p style={{
-                margin: 0,
-                fontSize: '12px',
-                color: isActive ? 'white' : 'rgba(255,255,255,0.6)',
-                lineHeight: 1.4,
-                wordBreak: 'break-word',
-              }}>
-                {topic.title}
-              </p>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                  margin: 0,
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: isActive ? 'white' : 'rgba(255,255,255,0.82)',
+                  lineHeight: 1.35,
+                  wordBreak: 'break-word',
+                }}>
+                  {topic.summary ?? topic.title}
+                </p>
+
+                <p style={{
+                  margin: '2px 0 0',
+                  fontSize: '10px',
+                  color: isActive ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)',
+                  lineHeight: 1.35,
+                  wordBreak: 'break-word',
+                }}>
+                  {topic.summary ? topic.title : 'Generating summary…'}
+                </p>
+
+                {topic.keyPoints && topic.keyPoints.length > 0 && (
+                  <div style={{
+                    marginTop: '6px',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                  }}>
+                    {topic.keyPoints.slice(0, 3).map((kp, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          fontSize: '9px',
+                          padding: '3px 7px',
+                          borderRadius: '999px',
+                          border: `1px solid ${isActive ? 'rgba(196,181,253,0.30)' : 'rgba(255,255,255,0.07)'}`,
+                          background: isActive ? 'rgba(196,181,253,0.10)' : 'rgba(255,255,255,0.02)',
+                          color: isActive ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.45)',
+                        }}
+                      >
+                        {kp}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </button>
           )
         })}

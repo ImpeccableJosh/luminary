@@ -1,5 +1,10 @@
 import type { Lesson, Subject, TeacherResponse } from '@/types/lesson'
 
+export interface SummaryResult {
+  summary: string
+  keyPoints?: string[]
+}
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:5000'
 
 export async function generateLesson(subject: Subject, topic: string): Promise<Lesson> {
@@ -44,6 +49,16 @@ export async function respondToStudent(
     body: JSON.stringify({ transcript, currentSegmentId, subject, topic }),
   })
   if (!res.ok) throw new Error(`Student response failed: ${res.status}`)
+  return res.json()
+}
+
+export async function summarizeText(text: string): Promise<SummaryResult> {
+  const res = await fetch(`${BACKEND_URL}/summarize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+  if (!res.ok) throw new Error(`Summarize failed: ${res.status}`)
   return res.json()
 }
 

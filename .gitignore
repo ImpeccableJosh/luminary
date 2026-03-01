@@ -60,3 +60,5 @@ build/
 
 # Misc
 .turbo/
+.mp4
+videos/

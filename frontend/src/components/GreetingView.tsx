@@ -7,9 +7,10 @@ interface Props {
   isSpeaking: boolean
   onStart: () => void
   onStop: () => void
+  error?: string | null
 }
 
-export default function GreetingView({ status, isSpeaking, onStart, onStop }: Props) {
+export default function GreetingView({ status, isSpeaking, onStart, onStop, error }: Props) {
   const isConnected = status === 'connected'
   const isConnecting = status === 'connecting'
 
@@ -112,6 +113,17 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop }: Pr
           {isConnected && isSpeaking && 'Speaking…'}
           {status === 'disconnected' && 'Tap to start your lesson'}
         </p>
+
+        {error && (
+          <p style={{
+            fontSize: '12px',
+            color: 'rgba(248,113,113,0.9)',
+            textAlign: 'center',
+            maxWidth: '280px',
+          }}>
+            {error}
+          </p>
+        )}
 
         <button
           onClick={isConnected ? onStop : onStart}

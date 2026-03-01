@@ -81,6 +81,18 @@ export async function executeManimCode(
         };
       }
 
+      // Log stderr so errors are visible even when we fall through
+      if (stderr) console.error('Manim stderr:', stderr.substring(0, 1000));
+
+      // Check for missing ffmpeg explicitly
+      if (stderr?.includes('ffmpeg') || stderr?.includes('No such file or directory')) {
+        return {
+          success: false,
+          error: 'ffmpeg not found. Install with: brew install ffmpeg',
+          logs: stderr,
+        };
+      }
+
       // Non-zero exit but video may still have been generated — fall through
     }
 
@@ -88,9 +100,13 @@ export async function executeManimCode(
 
     if (videoFiles.length === 0) {
       const dirContents = listDirectoryRecursive(tempDir);
+      // Surface Manim's stderr so the real cause is visible
+      const manimError = stderr
+        ? `Manim output:\n${stderr.substring(0, 2000)}\n\n`
+        : '';
       return {
         success: false,
-        error: `No video file generated. Directory contents:\n${dirContents}`,
+        error: `${manimError}No video file generated. Directory contents:\n${dirContents}`,
         logs: stdout + '\n' + stderr,
       };
     }

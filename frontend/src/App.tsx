@@ -23,6 +23,7 @@ export default function App() {
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null)
   const [isRendering, setIsRendering] = useState(false)
   const [completedTopics, setCompletedTopics] = useState<CompletedTopic[]>([])
+  const [startError, setStartError] = useState<string | null>(null)
 
   // Tool: agent calls this when user tells it what they want to learn
   const handleStartLesson = useCallback(
@@ -71,10 +72,21 @@ export default function App() {
   const conversation = useConversation({ clientTools })
 
   const startConversation = useCallback(async () => {
-    await navigator.mediaDevices.getUserMedia({ audio: true })
-    await conversation.startSession({
-      agentId: import.meta.env.VITE_ELEVENLABS_AGENT_ID,
-    })
+    setStartError(null)
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch (e) {
+      setStartError('Microphone access denied. Please allow mic access and try again.')
+      return
+    }
+    try {
+      await conversation.startSession({
+        agentId: import.meta.env.VITE_ELEVENLABS_AGENT_ID,
+        connectionType: 'webrtc',
+      })
+    } catch (e) {
+      setStartError(e instanceof Error ? e.message : 'Failed to connect to agent.')
+    }
   }, [conversation])
 
   const endConversation = useCallback(async () => {
@@ -88,6 +100,7 @@ export default function App() {
         isSpeaking={conversation.isSpeaking}
         onStart={startConversation}
         onStop={endConversation}
+        error={startError}
       />
     )
   }

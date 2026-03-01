@@ -29,6 +29,21 @@ export default function TeacherPanelTabs({ isTalking, isSpaceMode }: Props) {
 
   const showSolarTab = isSpaceMode
 
+  const tabBaseStyle: React.CSSProperties = {
+    flex: 1,
+    border: 'none',
+    borderRadius: '10px',
+    padding: '9px 10px',
+    fontSize: '10px',
+    fontWeight: 800,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+    transition: 'transform 0.18s ease, box-shadow 0.22s ease, background 0.22s ease, color 0.22s ease',
+    position: 'relative',
+    overflow: 'hidden',
+  }
+
   return (
     <div
       style={{
@@ -45,34 +60,40 @@ export default function TeacherPanelTabs({ isTalking, isSpaceMode }: Props) {
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          padding: '4px',
-          borderRadius: '10px',
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.02)',
+          padding: '5px',
+          borderRadius: '14px',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%)',
+          border: '1px solid rgba(167,139,250,0.16)',
+          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.02), 0 10px 28px rgba(0,0,0,0.22)',
           flexShrink: 0,
         }}
       >
         <button
           onClick={() => setPanelMode('teacher')}
           style={{
-            flex: 1,
-            border: 'none',
-            borderRadius: '8px',
-            padding: '8px 10px',
-            fontSize: '10px',
-            fontWeight: 800,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            background: panelMode === 'teacher' ? 'rgba(124,58,237,0.32)' : 'transparent',
-            color: panelMode === 'teacher' ? 'rgba(245,235,255,0.96)' : 'rgba(255,255,255,0.52)',
+            ...tabBaseStyle,
+            background: panelMode === 'teacher'
+              ? 'linear-gradient(135deg, rgba(124,58,237,0.32) 0%, rgba(239,178,255,0.18) 100%)'
+              : 'rgba(255,255,255,0.02)',
+            color: panelMode === 'teacher' ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.5)',
             boxShadow: panelMode === 'teacher'
-              ? 'inset 0 0 0 1px rgba(196,181,253,0.18), 0 0 16px rgba(124,58,237,0.12)'
+              ? 'inset 0 0 0 1px rgba(196,181,253,0.20), 0 0 0 1px rgba(124,58,237,0.12), 0 0 18px rgba(124,58,237,0.10)'
               : 'none',
+            transform: panelMode === 'teacher' ? 'translateY(-0.5px)' : 'translateY(0)',
           }}
         >
+          {panelMode === 'teacher' && (
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                inset: '-40% -20%',
+                background: 'linear-gradient(90deg, transparent 0%, rgba(239,178,255,0.18) 45%, rgba(124,58,237,0.18) 55%, transparent 100%)',
+                transform: 'translateX(-45%) rotate(10deg)',
+                animation: 'lmTabSweep 2.8s linear infinite',
+              }}
+            />
+          )}
           3D Teacher
         </button>
 
@@ -80,27 +101,40 @@ export default function TeacherPanelTabs({ isTalking, isSpaceMode }: Props) {
           <button
             onClick={() => setPanelMode('solar')}
             style={{
-              flex: 1,
-              border: 'none',
-              borderRadius: '8px',
-              padding: '8px 10px',
-              fontSize: '10px',
-              fontWeight: 800,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: panelMode === 'solar' ? 'rgba(56,189,248,0.22)' : 'transparent',
-              color: panelMode === 'solar' ? 'rgba(226,247,255,0.96)' : 'rgba(255,255,255,0.52)',
+              ...tabBaseStyle,
+              background: panelMode === 'solar'
+                ? 'linear-gradient(135deg, rgba(56,189,248,0.22) 0%, rgba(147,197,253,0.14) 100%)'
+                : 'rgba(255,255,255,0.02)',
+              color: panelMode === 'solar' ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)',
               boxShadow: panelMode === 'solar'
-                ? 'inset 0 0 0 1px rgba(147,197,253,0.16), 0 0 16px rgba(56,189,248,0.1)'
+                ? 'inset 0 0 0 1px rgba(147,197,253,0.18), 0 0 18px rgba(56,189,248,0.10)'
                 : 'none',
+              transform: panelMode === 'solar' ? 'translateY(-0.5px)' : 'translateY(0)',
             }}
           >
+            {panelMode === 'solar' && (
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: '-40% -20%',
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(226,247,255,0.16) 45%, rgba(56,189,248,0.14) 55%, transparent 100%)',
+                  transform: 'translateX(-45%) rotate(10deg)',
+                  animation: 'lmTabSweep 2.8s linear infinite',
+                }}
+              />
+            )}
             Solar
           </button>
         )}
       </div>
+
+      <style>{`
+        @keyframes lmTabSweep {
+          0% { transform: translateX(-55%) rotate(10deg); }
+          100% { transform: translateX(55%) rotate(10deg); }
+        }
+      `}</style>
 
       <div style={{ flex: 1, minHeight: 0 }}>
         {panelMode === 'solar' && showSolarTab

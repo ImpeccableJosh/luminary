@@ -277,29 +277,6 @@ export default function TeacherPanel({ isTalking: _isTalking }: Props) {
         </div>
       )}
 
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: '14px',
-          textAlign: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        <span
-          style={{
-            fontSize: '10px',
-            fontWeight: 800,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            color: 'rgba(239,178,255,0.74)',
-            textShadow: '0 0 12px rgba(239,178,255,0.28)',
-          }}
-        >
-          3D Teacher
-        </span>
-      </div>
     </div>
   )
 }

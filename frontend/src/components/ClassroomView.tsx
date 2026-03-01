@@ -356,9 +356,10 @@ export default function ClassroomView({
         justifyContent: 'space-between',
         padding: '0 20px',
         borderBottom: '1px solid rgba(255,255,255,0.06)',
-        background: 'rgba(0,0,0,0.2)',
+        background: 'linear-gradient(180deg, rgba(18,10,34,0.72) 0%, rgba(0,0,0,0.22) 100%)',
         backdropFilter: 'blur(12px)',
         position: 'relative',
+        boxShadow: 'inset 0 -1px 0 rgba(167,139,250,0.10), 0 10px 24px rgba(0,0,0,0.30)',
       }}>
         {/* Left: branding */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 2 }}>

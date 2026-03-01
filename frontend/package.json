@@ -22,6 +22,7 @@
     "@react-three/fiber": "^9.5.0",
     "@webspatial/core-sdk": "https://pkg.pr.new/@webspatial/core-sdk@125e42c",
     "@webspatial/react-sdk": "https://pkg.pr.new/@webspatial/react-sdk@125e42c",
+    "framer-motion": "^12.34.3",
     "gsap": "3.13.0",
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",

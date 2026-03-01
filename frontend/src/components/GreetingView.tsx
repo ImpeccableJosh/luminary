@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { gsap } from 'gsap'
+import { motion, AnimatePresence } from 'framer-motion'
 import LoadingScene from './LoadingScene'
 
 const MIC_VIDEO_SRC = '/mic-cta.mp4'
@@ -62,6 +63,7 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
   const micVideoRef = useRef<HTMLVideoElement | null>(null)
   const micSurfaceRef = useRef<HTMLDivElement | null>(null)
   const micVisualRef = useRef<HTMLDivElement | null>(null)
+  const micSwirlRef = useRef<HTMLDivElement | null>(null)
   const micGlowRef = useRef<HTMLDivElement | null>(null)
   const micTintRef = useRef<HTMLDivElement | null>(null)
   const ringRefs = useRef<Array<HTMLSpanElement | null>>([])
@@ -69,10 +71,13 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
   const waveformRef = useRef<HTMLDivElement | null>(null)
   const waveBarRefs = useRef<Array<HTMLSpanElement | null>>([])
   const waveTweensRef = useRef<gsap.core.Tween[]>([])
+  const phraseLoopRef = useRef<gsap.core.Timeline | null>(null)
   const micGlowXToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micGlowYToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micSurfaceXToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micSurfaceYToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
+  const micSwirlXToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
+  const micSwirlYToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
 
   useEffect(() => {
     if (!phraseRef.current) {
@@ -151,6 +156,7 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
 
       let activeIndex = 0
       const phraseLoop = gsap.timeline({ repeat: -1, repeatDelay: 0.08, paused: true })
+      phraseLoopRef.current = phraseLoop
 
       for (let step = 1; step <= HERO_PHRASES.length; step += 1) {
         phraseLoop
@@ -304,6 +310,15 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
         ease: 'power3.out',
       })
 
+      micSwirlXToRef.current = gsap.quickTo(micSwirlRef.current, 'x', {
+        duration: 0.85,
+        ease: 'power3.out',
+      })
+      micSwirlYToRef.current = gsap.quickTo(micSwirlRef.current, 'y', {
+        duration: 0.85,
+        ease: 'power3.out',
+      })
+
       intro.call(() => {
         phraseLoop.play()
         ringLoop.play()
@@ -400,13 +415,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
     ])
 
     if (isWaveformMode) {
-      gsap.set(fragments, {
-        autoAlpha: 0.75,
-        x: 0,
-        y: 0,
-        rotate: 0,
-        scale: 1,
-      })
       gsap.set(waveformRef.current, {
         autoAlpha: 0,
         scale: 0.9,
@@ -600,6 +608,85 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
     })
   }, [isSpeaking, isWaveformMode])
 
+  // Swap rotating phrase → "luminary" while connected/connecting, back to cycling on disconnect
+  useEffect(() => {
+    const el = phraseRef.current
+    const loop = phraseLoopRef.current
+    if (!el) return
+
+    if (isWaveformMode) {
+      // Pause the phrase cycle and show "luminary"
+      loop?.pause()
+      gsap.killTweensOf(el)
+      gsap.to(el, {
+        x: 60,
+        autoAlpha: 0,
+        filter: 'blur(6px)',
+        duration: 0.2,
+        ease: 'power3.in',
+        overwrite: true,
+        onComplete: () => {
+          el.textContent = 'luminary'
+          gsap.fromTo(
+            el,
+            { x: -40, yPercent: 10, filter: 'blur(8px)', autoAlpha: 0 },
+            { x: 0, yPercent: 0, filter: 'blur(0px)', autoAlpha: 1, duration: 0.52, ease: 'expo.out' },
+          )
+        },
+      })
+    } else if (status === 'disconnected' && el.textContent === 'luminary') {
+      // Fade "luminary" out, bring back the cycling phrases
+      gsap.killTweensOf(el)
+      gsap.to(el, {
+        x: 60,
+        autoAlpha: 0,
+        filter: 'blur(6px)',
+        duration: 0.2,
+        ease: 'power3.in',
+        overwrite: true,
+        onComplete: () => {
+          if (!loop) return
+          el.textContent = HERO_PHRASES[0]
+          gsap.fromTo(
+            el,
+            { x: -52, yPercent: 16, filter: 'blur(10px)', autoAlpha: 0 },
+            {
+              x: 0,
+              yPercent: 0,
+              filter: 'blur(0px)',
+              autoAlpha: 1,
+              duration: 0.52,
+              ease: 'expo.out',
+              onComplete: () => { loop.restart() },
+            },
+          )
+        },
+      })
+    }
+  }, [isWaveformMode, status])
+
+  // Ambient breathing glow around the mic (calm) + slightly stronger while speaking
+  useEffect(() => {
+    if (!micGlowRef.current) return
+
+    // Kill any previous breathing tween attached to this element.
+    gsap.killTweensOf(micGlowRef.current)
+
+    gsap.to(micGlowRef.current, {
+      autoAlpha: isSpeaking ? 0.55 : isConnected ? 0.38 : 0.22,
+      scale: isSpeaking ? 1.16 : isConnected ? 1.08 : 1.02,
+      duration: isSpeaking ? 0.7 : 1.1,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1,
+      overwrite: 'auto',
+    })
+
+    return () => {
+      gsap.killTweensOf(micGlowRef.current)
+    }
+  }, [isSpeaking, isConnected])
+
   const handleMicAction = () => {
     if (isConnecting) {
       return
@@ -643,6 +730,8 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
     micGlowYToRef.current?.(offsetY * 9)
     micSurfaceXToRef.current?.(offsetX * 2.6)
     micSurfaceYToRef.current?.(offsetY * 2.6)
+    micSwirlXToRef.current?.(offsetX * -5.2)
+    micSwirlYToRef.current?.(offsetY * -5.2)
   }
 
   const handleMicPointerLeave = () => {
@@ -650,6 +739,8 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
     micGlowYToRef.current?.(0)
     micSurfaceXToRef.current?.(0)
     micSurfaceYToRef.current?.(0)
+    micSwirlXToRef.current?.(0)
+    micSwirlYToRef.current?.(0)
   }
 
   return (
@@ -796,13 +887,33 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
           }}
           aria-label={isConnecting ? 'Connecting' : isConnected ? 'End session' : 'Start your lesson'}
         >
+          {/* Moving purple energy behind the mic */}
+          <div
+            aria-hidden
+            ref={micSwirlRef}
+            className="lm-mic-swirl"
+            style={{
+              position: 'absolute',
+              inset: '-26px',
+              borderRadius: '50%',
+              background:
+                'conic-gradient(from 0deg, rgba(124,58,237,0.0) 0deg, rgba(124,58,237,0.45) 55deg, rgba(239,178,255,0.18) 120deg, rgba(124,58,237,0.0) 200deg, rgba(124,58,237,0.35) 285deg, rgba(124,58,237,0.0) 360deg)',
+              filter: 'blur(10px) saturate(1.25)',
+              opacity: isConnected ? (isSpeaking ? 0.78 : 0.62) : 0.36,
+              mixBlendMode: 'screen',
+              animation: isSpeaking ? 'lmSwirlSpin 2.8s linear infinite' : 'lmSwirlSpin 6.8s linear infinite',
+              transformOrigin: '50% 50%',
+              pointerEvents: 'none',
+            }}
+          />
+
           <div
             ref={micGlowRef}
             style={{
               position: 'absolute',
               inset: '-6px',
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(167,72,255,0.34) 0%, rgba(140,58,255,0.2) 34%, rgba(92,32,180,0) 72%)',
+              background: 'radial-gradient(circle, rgba(167,72,255,0.42) 0%, rgba(140,58,255,0.22) 34%, rgba(92,32,180,0) 72%)',
               pointerEvents: 'none',
             }}
           />
@@ -922,8 +1033,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
                   clipPath,
                   background: 'linear-gradient(135deg, rgba(206,154,255,0.42), rgba(120,54,220,0.08))',
                   boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.08)',
-                  backdropFilter: 'blur(6px)',
-                  WebkitBackdropFilter: 'blur(6px)',
                   pointerEvents: 'none',
                 }}
               />
@@ -963,6 +1072,13 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
           </div>
         </button>
 
+        <style>{`
+          @keyframes lmSwirlSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+
         <p
           style={{
             fontSize: '13px',
@@ -994,8 +1110,11 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
 
         {/* Bypass: skip voice agent, type topic/subject directly */}
         {!isConnected && !isConnecting && (
-          <button
+          <motion.button
             onClick={() => setShowBypass((v) => !v)}
+            whileHover={{ color: 'rgba(255,255,255,0.45)', scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
             style={{
               background: 'none', border: 'none',
               color: 'rgba(255,255,255,0.2)',
@@ -1006,64 +1125,73 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
             }}
           >
             {showBypass ? 'Cancel' : 'Enter classroom manually'}
-          </button>
+          </motion.button>
         )}
 
-        {showBypass && (
-          <div
-            style={{
-              display: 'flex', flexDirection: 'column', gap: '8px',
-              padding: '14px', borderRadius: '12px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              width: '280px',
-            }}
-          >
-            <input
-              autoFocus
-              placeholder="What do you want to learn?"
-              value={bypassTopic}
-              onChange={(e) => setBypassTopic(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  const q = bypassTopic.trim()
-                  if (q) onEnterDirectly(q, q)
-                }
-              }}
-              className="lm-bypass-input"
+        <AnimatePresence>
+          {showBypass && (
+            <motion.div
+              key="bypass-form"
+              initial={{ opacity: 0, y: -10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 26 }}
               style={{
-                background: 'rgba(167,72,255,0.08)',
-                border: '1px solid rgba(167,72,255,0.22)',
-                borderRadius: '8px', padding: '10px 13px',
-                color: 'white', fontSize: '13px', outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-            />
-            <button
-              type="button"
-              disabled={!bypassTopic.trim()}
-              onClick={() => {
-                const q = bypassTopic.trim()
-                if (q) onEnterDirectly(q, q)
-              }}
-              style={{
-                padding: '10px', borderRadius: '8px', border: 'none',
-                background: bypassTopic.trim()
-                  ? 'linear-gradient(135deg, rgba(167,72,255,0.85), rgba(124,58,237,0.9))'
-                  : 'rgba(124,58,237,0.18)',
-                color: 'white', fontWeight: 700, fontSize: '12px',
-                letterSpacing: '0.04em',
-                cursor: bypassTopic.trim() ? 'pointer' : 'default',
-                opacity: bypassTopic.trim() ? 1 : 0.35,
-                transition: 'all 0.2s',
-                boxShadow: bypassTopic.trim() ? '0 0 16px rgba(124,58,237,0.3)' : 'none',
+                display: 'flex', flexDirection: 'column', gap: '8px',
+                padding: '14px', borderRadius: '12px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                width: '280px',
               }}
             >
-              Enter classroom →
-            </button>
-          </div>
-        )}
+              <input
+                autoFocus
+                placeholder="What do you want to learn?"
+                value={bypassTopic}
+                onChange={(e) => setBypassTopic(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    const q = bypassTopic.trim()
+                    if (q) onEnterDirectly(q, q)
+                  }
+                }}
+                className="lm-bypass-input"
+                style={{
+                  background: 'rgba(167,72,255,0.08)',
+                  border: '1px solid rgba(167,72,255,0.22)',
+                  borderRadius: '8px', padding: '10px 13px',
+                  color: 'white', fontSize: '13px', outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+              />
+              <motion.button
+                type="button"
+                disabled={!bypassTopic.trim()}
+                onClick={() => {
+                  const q = bypassTopic.trim()
+                  if (q) onEnterDirectly(q, q)
+                }}
+                whileHover={bypassTopic.trim() ? { scale: 1.03, boxShadow: '0 0 24px rgba(124,58,237,0.5)' } : {}}
+                whileTap={bypassTopic.trim() ? { scale: 0.97 } : {}}
+                transition={{ type: 'spring', stiffness: 380, damping: 24 }}
+                style={{
+                  padding: '10px', borderRadius: '8px', border: 'none',
+                  background: bypassTopic.trim()
+                    ? 'linear-gradient(135deg, rgba(167,72,255,0.85), rgba(124,58,237,0.9))'
+                    : 'rgba(124,58,237,0.18)',
+                  color: 'white', fontWeight: 700, fontSize: '12px',
+                  letterSpacing: '0.04em',
+                  cursor: bypassTopic.trim() ? 'pointer' : 'default',
+                  opacity: bypassTopic.trim() ? 1 : 0.35,
+                  boxShadow: bypassTopic.trim() ? '0 0 16px rgba(124,58,237,0.3)' : 'none',
+                }}
+              >
+                Enter classroom →
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <style>{`

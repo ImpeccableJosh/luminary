@@ -27,7 +27,26 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
         borderBottom: '1px solid rgba(167,139,250,0.12)',
         flexShrink: 0,
         textAlign: 'center',
+        position: 'relative',
       }}>
+        {/* Subtle spark/glint layer */}
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background:
+              'radial-gradient(10px 10px at 18% 35%, rgba(239,178,255,0.18), transparent 60%),'
+              + 'radial-gradient(12px 12px at 72% 30%, rgba(196,181,253,0.14), transparent 62%),'
+              + 'radial-gradient(8px 8px at 56% 70%, rgba(124,58,237,0.14), transparent 60%)',
+            opacity: 0.9,
+            filter: 'blur(0.2px)',
+            animation: 'lmSparkDrift 5.6s ease-in-out infinite',
+            mixBlendMode: 'screen',
+          }}
+        />
+
         <p style={{
           margin: 0,
           fontSize: '22px',
@@ -62,6 +81,12 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
         @keyframes lessonHistoryFlow {
           0% { background-position: 0% 50%; }
           100% { background-position: -200% 50%; }
+        }
+
+        @keyframes lmSparkDrift {
+          0% { transform: translate3d(0, 0, 0); opacity: 0.75; }
+          50% { transform: translate3d(0, 2px, 0); opacity: 0.92; }
+          100% { transform: translate3d(0, 0, 0); opacity: 0.75; }
         }
       `}</style>
 

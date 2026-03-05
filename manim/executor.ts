@@ -82,7 +82,7 @@ export async function executeManimCode(
       }
 
       // Log stderr so errors are visible even when we fall through
-      if (stderr) console.error('Manim stderr:', stderr.substring(0, 1000));
+      if (stderr) console.error('Manim stderr:', stderr.substring(0, 5000));
 
       // Check for missing ffmpeg explicitly
       if (stderr?.includes('ffmpeg') || stderr?.includes('No such file or directory')) {
@@ -102,7 +102,7 @@ export async function executeManimCode(
       const dirContents = listDirectoryRecursive(tempDir);
       // Surface Manim's stderr so the real cause is visible
       const manimError = stderr
-        ? `Manim output:\n${stderr.substring(0, 2000)}\n\n`
+        ? `Manim output:\n${stderr.substring(0, 5000)}\n\n`
         : '';
       return {
         success: false,

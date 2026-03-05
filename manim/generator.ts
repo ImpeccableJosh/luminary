@@ -26,7 +26,7 @@ export async function generateManimCode(request: ManimGenerationRequest): Promis
    - Each animation should use run_time=${avgAnimationTime.toFixed(1)}
    - Total: ${numAnimations} × ${avgAnimationTime.toFixed(1)}s = ${duration}s
    - Add minimal waits (0.3-0.5s) between major sections only
-   - NO long pauses or unnecessary waiting
+   - NO long pauses or unnecessary waiting except for at the end to allow viewers to absorb the final insight.
 
 3. **CONCEPT-SPECIFIC VISUALS**: Choose visualization based on the concept type:
    - **Math Equations/Formulas**: Show the actual equations with MathTex, demonstrate transformations
@@ -62,6 +62,8 @@ class GeneratedScene(Scene):
    - Add Text labels for clarity
    - Use colors meaningfully (e.g., BLUE for positive, RED for negative)
    - Ensure mathematical accuracy
+   - Avoid overlapping elements; keep the scene clear and uncluttered
+   - End with a clear visual representation of the key insight or takeaway
 
 7. **OUTPUT FORMAT**:
    - Return ONLY Python code
@@ -81,7 +83,7 @@ THEN CODE:
 - ${numAnimations} animations, each ${avgAnimationTime.toFixed(1)}s long
 - DIRECTLY visualize the concept
 - Use appropriate math/physics notation if relevant
-- Total runtime: ${duration} seconds
+- Total runtime: ${duration} seconds (add a few second pause at the end for absorption)
 
 Return ONLY the Python code, no markdown formatting:`;
 
@@ -90,7 +92,7 @@ Return ONLY the Python code, no markdown formatting:`;
     max_tokens: 4096,
     temperature: 0.7,
     system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
+    messages: [{ role: 'user', content: userPrompt }]
   });
 
   let code = '';

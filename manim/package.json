@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "DOTENV_CONFIG_PATH=.env tsx --require dotenv/config server.ts",
+    "dev": "tsx --env-file=.env server.ts",
     "start": "node dist/server.js",
     "build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json"
   },

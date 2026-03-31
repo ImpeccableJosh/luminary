@@ -19,6 +19,13 @@ export async function generateManimCode(request: ManimGenerationRequest): Promis
 
 🎯 CRITICAL RULES - MUST FOLLOW:
 
+0. **NO LATEX TOOLCHAIN AVAILABLE**:
+   - This machine does NOT have LaTeX or dvisvgm installed
+   - NEVER use MathTex, Tex, Matrix, MobjectMatrix, DecimalTable, or any TeX-backed Manim object
+   - NEVER use Axes(..., include_numbers=True)
+   - Use Text, Integer, DecimalNumber, VGroup, Line, Arrow, Brace, Rectangle, and manually positioned labels instead
+   - If you need matrix-style visuals, draw brackets with Line objects and place plain Text/Integer entries manually
+
 1. **DIRECT RELEVANCE**: The animation MUST visually demonstrate the EXACT concept described. Do not create generic shapes unless the concept is about those shapes.
 
 2. **PRECISE TIMING**: The total animation must run for EXACTLY ${duration} seconds:
@@ -29,8 +36,8 @@ export async function generateManimCode(request: ManimGenerationRequest): Promis
    - NO long pauses or unnecessary waiting
 
 3. **CONCEPT-SPECIFIC VISUALS**: Choose visualization based on the concept type:
-   - **Math Equations/Formulas**: Show the actual equations with MathTex, demonstrate transformations
-   - **Functions/Calculus**: Use Axes and plot() to graph functions, show derivatives, integrals
+   - **Math Equations/Formulas**: Use Text or manually arranged symbols/numbers instead of MathTex
+   - **Functions/Calculus**: Use Axes and plot() to graph functions, but avoid TeX-based labels and avoid include_numbers=True
    - **Physics**: Show vectors, forces, motion, wave propagation with appropriate diagrams
    - **Geometry**: Show the actual shapes, angles, constructions mentioned
    - **Processes/Algorithms**: Show step-by-step progression with clear labels
@@ -49,7 +56,7 @@ class GeneratedScene(Scene):
 \`\`\`
 
 5. **MANIM TOOLKIT**:
-   - **Math**: MathTex("x^2 + y^2 = r^2"), Axes(), NumberLine, plot(lambda x: ...)
+   - **Math**: Text("x^2 + y^2 = r^2"), Integer(3), DecimalNumber(2.5), Axes(), NumberLine, plot(lambda x: ...)
    - **Shapes**: Circle, Square, Arrow, Line, Dot, Arc, Polygon
    - **Text**: Text("label"), always use for explanations
    - **Animations**: Create(), Write(), FadeIn(), Transform(), Indicate(), Circumscribe()
@@ -116,6 +123,13 @@ function cleanManimCode(code: string): string {
     /(\bget_[xy]_axis_label\s*\([^\)]*?)\s*font_size\s*=\s*[\d.]+\s*,\s*/g,
     '$1'
   );
+
+  // This environment does not have LaTeX tooling, so downgrade TeX-backed
+  // constructs to plain text variants when they slip through generation.
+  cleaned = cleaned.replace(/\bMathTex\s*\(/g, 'Text(');
+  cleaned = cleaned.replace(/\bTex\s*\(/g, 'Text(');
+  cleaned = cleaned.replace(/\bMarkupText\s*\(/g, 'Text(');
+  cleaned = cleaned.replace(/include_numbers\s*=\s*True/g, 'include_numbers=False');
 
   if (!cleaned.includes('from manim import')) {
     cleaned = 'from manim import *\n\n' + cleaned;

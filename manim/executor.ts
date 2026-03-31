@@ -84,8 +84,21 @@ export async function executeManimCode(
       // Log stderr so errors are visible even when we fall through
       if (stderr) console.error('Manim stderr:', stderr.substring(0, 1000));
 
+      if (
+        stderr?.includes('latex') ||
+        stderr?.includes('dvisvgm') ||
+        stderr?.includes('LaTeX') ||
+        stderr?.includes('tex_file_writing.py')
+      ) {
+        return {
+          success: false,
+          error: 'LaTeX toolchain not found. Install BasicTeX/MacTeX and dvisvgm, or avoid MathTex/Tex-based Manim objects.',
+          logs: stderr,
+        };
+      }
+
       // Check for missing ffmpeg explicitly
-      if (stderr?.includes('ffmpeg') || stderr?.includes('No such file or directory')) {
+      if (stderr?.includes('ffmpeg')) {
         return {
           success: false,
           error: 'ffmpeg not found. Install with: brew install ffmpeg',

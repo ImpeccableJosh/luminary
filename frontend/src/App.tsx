@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useConversation } from '@elevenlabs/react'
 import { renderManim, createObjectUrl, summarizeText } from '@/lib/api'
 import GreetingView from '@/components/GreetingView'
@@ -37,6 +37,13 @@ export interface ChatMessage {
 
 type AppView = 'greeting' | 'classroom'
 
+const AUTO_KICKOFF_MESSAGE = 'Hi'
+const AUTO_KICKOFF_DELAY_MS = 900
+const CONNECTION_FALLBACK_DELAY_MS = 2800
+const PRIMARY_TRANSPORT: ConversationTransport = 'websocket'
+const SECONDARY_TRANSPORT: ConversationTransport = 'webrtc'
+type ConversationTransport = 'webrtc' | 'websocket'
+
 export default function App() {
   const [view, setView] = useState<AppView>('greeting')
   const [lessonInfo, setLessonInfo] = useState<LessonInfo | null>(null)
@@ -47,6 +54,80 @@ export default function App() {
   const [textMode, setTextMode] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isSpaceMode, setIsSpaceMode] = useState(false)
+  const autoKickoffTimerRef = useRef<number | null>(null)
+  const connectionFallbackTimerRef = useRef<number | null>(null)
+  const pendingAutoKickoffMessageRef = useRef<string | null>(null)
+  const sawAgentResponseRef = useRef(false)
+  const activeTransportRef = useRef<ConversationTransport>(PRIMARY_TRANSPORT)
+
+  const clearAutoKickoffTimer = useCallback(() => {
+    if (autoKickoffTimerRef.current !== null) {
+      window.clearTimeout(autoKickoffTimerRef.current)
+      autoKickoffTimerRef.current = null
+    }
+  }, [])
+
+  const markAgentResponsive = useCallback(() => {
+    sawAgentResponseRef.current = true
+    clearAutoKickoffTimer()
+    if (connectionFallbackTimerRef.current !== null) {
+      window.clearTimeout(connectionFallbackTimerRef.current)
+      connectionFallbackTimerRef.current = null
+    }
+  }, [clearAutoKickoffTimer])
+
+  const clearConnectionFallbackTimer = useCallback(() => {
+    if (connectionFallbackTimerRef.current !== null) {
+      window.clearTimeout(connectionFallbackTimerRef.current)
+      connectionFallbackTimerRef.current = null
+    }
+  }, [])
+
+  const scheduleAutoKickoff = useCallback((conversationApi: { sendUserMessage: (text: string) => void }) => {
+    clearAutoKickoffTimer()
+    sawAgentResponseRef.current = false
+    pendingAutoKickoffMessageRef.current = null
+    autoKickoffTimerRef.current = window.setTimeout(() => {
+      if (sawAgentResponseRef.current) {
+        return
+      }
+
+      pendingAutoKickoffMessageRef.current = AUTO_KICKOFF_MESSAGE
+      conversationApi.sendUserMessage(AUTO_KICKOFF_MESSAGE)
+    }, AUTO_KICKOFF_DELAY_MS)
+  }, [clearAutoKickoffTimer])
+
+  const scheduleConnectionFallback = useCallback((
+    conversationApi: {
+      startSession: (options: { agentId: string; connectionType: ConversationTransport }) => Promise<string>
+      endSession: () => Promise<void>
+      sendUserMessage: (text: string) => void
+    },
+  ) => {
+    clearConnectionFallbackTimer()
+
+    if (activeTransportRef.current !== PRIMARY_TRANSPORT) {
+      return
+    }
+
+    connectionFallbackTimerRef.current = window.setTimeout(async () => {
+      if (sawAgentResponseRef.current || activeTransportRef.current !== PRIMARY_TRANSPORT) {
+        return
+      }
+
+      try {
+        await conversationApi.endSession()
+        activeTransportRef.current = SECONDARY_TRANSPORT
+        await conversationApi.startSession({
+          agentId: import.meta.env.VITE_ELEVENLABS_AGENT_ID,
+          connectionType: SECONDARY_TRANSPORT,
+        })
+        scheduleAutoKickoff(conversationApi)
+      } catch (error) {
+        setStartError(error instanceof Error ? error.message : 'Failed to reconnect to agent.')
+      }
+    }, CONNECTION_FALLBACK_DELAY_MS)
+  }, [clearConnectionFallbackTimer, scheduleAutoKickoff])
 
   useEffect(() => {
     document.documentElement.dataset.luminaryLessonMode = isSpaceMode ? 'space' : 'default'
@@ -54,6 +135,11 @@ export default function App() {
       delete document.documentElement.dataset.luminaryLessonMode
     }
   }, [isSpaceMode])
+
+  useEffect(() => () => {
+    clearAutoKickoffTimer()
+    clearConnectionFallbackTimer()
+  }, [clearAutoKickoffTimer, clearConnectionFallbackTimer])
 
   // Tool: agent calls this when user tells it what they want to learn
   const handleStartLesson = useCallback(
@@ -110,14 +196,34 @@ export default function App() {
 
   const conversation = useConversation({
     clientTools,
+    onConnect: () => {
+      setStartError(null)
+    },
+    onError: (error: unknown) => {
+      setStartError(error instanceof Error ? error.message : String(error || 'Failed to connect to agent.'))
+    },
     onMessage: ({ message, source }) => {
+      if (source === 'ai') {
+        markAgentResponsive()
+      }
+
       if (source === 'user') {
+        if (pendingAutoKickoffMessageRef.current === message) {
+          pendingAutoKickoffMessageRef.current = null
+          return
+        }
+
         setIsSpaceMode(isSpaceRelatedQuery(message))
       }
       setMessages((prev) => [
         ...prev,
         { id: String(Date.now() + Math.random()), role: source as 'user' | 'ai', text: message },
       ])
+    },
+    onModeChange: ({ mode }) => {
+      if (mode === 'speaking') {
+        markAgentResponsive()
+      }
     },
   })
 
@@ -146,7 +252,22 @@ export default function App() {
   const startConversation = useCallback(async () => {
     setStartError(null)
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true })
+      const permissionsApi = navigator.permissions
+      let permissionState: PermissionState | null = null
+
+      if (permissionsApi?.query) {
+        try {
+          const status = await permissionsApi.query({ name: 'microphone' as PermissionName })
+          permissionState = status.state
+        } catch {
+          permissionState = null
+        }
+      }
+
+      if (permissionState !== 'granted') {
+        const permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        permissionStream.getTracks().forEach((track) => track.stop())
+      }
     } catch (e) {
       setStartError('Microphone access denied. Please allow mic access and try again.')
       return
@@ -154,16 +275,26 @@ export default function App() {
     try {
       await conversation.startSession({
         agentId: import.meta.env.VITE_ELEVENLABS_AGENT_ID,
-        connectionType: 'webrtc',
+        connectionType: PRIMARY_TRANSPORT,
       })
+      activeTransportRef.current = PRIMARY_TRANSPORT
+      scheduleAutoKickoff(conversation)
+      scheduleConnectionFallback(conversation)
     } catch (e) {
       setStartError(e instanceof Error ? e.message : 'Failed to connect to agent.')
+      clearAutoKickoffTimer()
+      clearConnectionFallbackTimer()
     }
-  }, [conversation])
+  }, [clearAutoKickoffTimer, clearConnectionFallbackTimer, conversation, scheduleAutoKickoff, scheduleConnectionFallback])
 
   const endConversation = useCallback(async () => {
+    clearAutoKickoffTimer()
+    clearConnectionFallbackTimer()
+    pendingAutoKickoffMessageRef.current = null
+    sawAgentResponseRef.current = false
+    activeTransportRef.current = PRIMARY_TRANSPORT
     await conversation.endSession()
-  }, [conversation])
+  }, [clearAutoKickoffTimer, clearConnectionFallbackTimer, conversation])
 
   if (view === 'greeting') {
     return (

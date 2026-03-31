@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { gsap } from 'gsap'
 import { motion, AnimatePresence } from 'framer-motion'
-import LoadingScene from './LoadingScene'
 
-const MIC_VIDEO_SRC = '/mic-cta.mp4'
 const WAVE_BAR_COUNT = 7
 const MIC_FRAGMENT_CLIPS = [
   'polygon(0 0, 50% 0, 50% 50%, 0 50%)',
@@ -60,7 +58,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
   const subtitleRef = useRef<HTMLParagraphElement | null>(null)
   const micCtaRef = useRef<HTMLDivElement | null>(null)
   const micButtonRef = useRef<HTMLButtonElement | null>(null)
-  const micVideoRef = useRef<HTMLVideoElement | null>(null)
   const micSurfaceRef = useRef<HTMLDivElement | null>(null)
   const micVisualRef = useRef<HTMLDivElement | null>(null)
   const micSwirlRef = useRef<HTMLDivElement | null>(null)
@@ -334,58 +331,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
   }, [])
 
   useEffect(() => {
-    const video = micVideoRef.current
-
-    if (!video) {
-      return
-    }
-
-    const primeVideo = () => {
-      if (!Number.isNaN(video.duration) && video.duration > 0.18) {
-        video.currentTime = 0.12
-      }
-    }
-
-    const playVideo = () => {
-      void video.play().catch(() => {})
-    }
-
-    const restartVideo = () => {
-      const restartTimeline = gsap.timeline()
-      restartTimeline
-        .to(video, {
-          autoAlpha: 0.72,
-          duration: 0.08,
-          ease: 'power1.out',
-        })
-        .add(() => {
-          primeVideo()
-          playVideo()
-        })
-        .to(video, {
-          autoAlpha: 1,
-          duration: 0.14,
-          ease: 'power1.inOut',
-        })
-    }
-
-    if (video.readyState >= 2) {
-      primeVideo()
-      playVideo()
-    }
-
-    video.addEventListener('loadedmetadata', primeVideo)
-    video.addEventListener('loadeddata', playVideo)
-    video.addEventListener('ended', restartVideo)
-
-    return () => {
-      video.removeEventListener('loadedmetadata', primeVideo)
-      video.removeEventListener('loadeddata', playVideo)
-      video.removeEventListener('ended', restartVideo)
-    }
-  }, [])
-
-  useEffect(() => {
     if (isConnected || isConnecting) {
       setIsWaveformMode(true)
       return
@@ -639,7 +584,7 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
           el.style.backgroundSize = '400% 100%'
           el.style.backgroundPosition = '0% 50%'
           el.style.backgroundClip = 'text'
-          ;(el.style as Record<string, string>)['webkitBackgroundClip'] = 'text'
+          ;(el.style as unknown as Record<string, string>)['webkitBackgroundClip'] = 'text'
           el.style.color = 'transparent'
 
           // Enter animation
@@ -682,7 +627,7 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
           el.style.backgroundSize = ''
           el.style.backgroundPosition = ''
           el.style.backgroundClip = ''
-          ;(el.style as Record<string, string>)['webkitBackgroundClip'] = ''
+          ;(el.style as unknown as Record<string, string>)['webkitBackgroundClip'] = ''
           el.style.color = '#efb2ff'
 
           el.textContent = HERO_PHRASES[0]
@@ -794,10 +739,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
         backgroundColor: isSpatial ? 'transparent' : '#000000',
       }}
     >
-      {/* Loading overlay — shown while connecting to the agent */}
-      {isConnecting && (
-        <LoadingScene mode="overlay" label="Education should be for everyone." />
-      )}
       <div
         ref={heroRef}
         style={{
@@ -1001,27 +942,6 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
                 inset: 0,
               }}
             >
-              <video
-                ref={micVideoRef}
-                src={MIC_VIDEO_SRC}
-                muted
-                playsInline
-                autoPlay
-                loop
-                preload="auto"
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  borderRadius: '50%',
-                  transform: 'scale(1.06)',
-                  opacity: 1,
-                  filter: 'brightness(1.34) contrast(1.16) saturate(1.08)',
-                }}
-              />
               <div
                 ref={micTintRef}
                 style={{

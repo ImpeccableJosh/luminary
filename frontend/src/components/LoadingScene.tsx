@@ -170,23 +170,6 @@ export default function LoadingScene({ label, mode = 'fill' }: Props) {
         }}
       />
 
-      {/* Video fills the panel */}
-      <video
-        src="/loading.mov"
-        autoPlay
-        loop
-        muted
-        playsInline
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-          filter: 'brightness(1.06) saturate(1.1)',
-        }}
-      />
-
       {/* Edge vignette */}
       <div style={{
         position: 'absolute',

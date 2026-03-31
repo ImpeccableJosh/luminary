@@ -29,6 +29,10 @@ export default function TeacherPanelTabs({ isTalking, isSpaceMode }: Props) {
 
   const showSolarTab = isSpaceMode
 
+  if (!showSolarTab) {
+    return <TeacherPanel isTalking={isTalking} />
+  }
+
   const tabBaseStyle: React.CSSProperties = {
     flex: 1,
     border: 'none',
@@ -94,7 +98,7 @@ export default function TeacherPanelTabs({ isTalking, isSpaceMode }: Props) {
               }}
             />
           )}
-          3D Teacher
+          Teacher
         </button>
 
         {showSolarTab && (

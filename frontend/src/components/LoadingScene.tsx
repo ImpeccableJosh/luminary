@@ -1,4 +1,4 @@
-// LoadingScene — branded loading overlay using the luminary loading video.
+// LoadingScene — branded loading overlay.
 //
 // mode="fill":    fills parent container (used in BoardPanel while rendering)
 // mode="overlay": fixed full-screen overlay (used in GreetingView while connecting)
@@ -88,25 +88,65 @@ export default function LoadingScene({ label, mode = 'fill' }: Props) {
           }}
         />
 
-        {/* Video */}
         <div style={{
           position: 'relative',
           width: 'min(400px, 52vw)',
           height: 'min(400px, 52vw)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}>
-          <video
-            src="/loading.mov"
-            autoPlay
-            loop
-            muted
-            playsInline
+          <div
             style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-              filter: 'brightness(1.08) saturate(1.12)',
+              position: 'absolute',
+              inset: '10%',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(152,84,255,0.3) 0%, rgba(87,39,167,0.18) 38%, rgba(0,0,0,0) 72%)',
+              filter: 'blur(22px)',
+              opacity: 0.9,
+              pointerEvents: 'none',
             }}
           />
+          <div
+            style={{
+              position: 'absolute',
+              inset: '15%',
+              borderRadius: '50%',
+              background:
+                'conic-gradient(from 210deg, rgba(255,255,255,0) 0deg, rgba(239,178,255,0.2) 48deg, rgba(124,58,237,0.5) 116deg, rgba(96,165,250,0.18) 198deg, rgba(255,255,255,0) 270deg, rgba(239,178,255,0.16) 360deg)',
+              filter: 'blur(14px) saturate(1.12)',
+              mixBlendMode: 'screen',
+              animation: 'lsCoreSpin 5.6s linear infinite',
+              pointerEvents: 'none',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              inset: '22%',
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.26) 0%, rgba(255,236,255,0.16) 18%, rgba(177,104,255,0.14) 40%, rgba(10,10,18,0.02) 65%, rgba(10,10,18,0) 100%)',
+              filter: 'blur(6px)',
+              animation: 'lsCoreFloat 4.8s ease-in-out infinite alternate',
+              pointerEvents: 'none',
+            }}
+          />
+          {[0, 1, 2].map((ringIndex) => (
+            <div
+              key={ringIndex}
+              style={{
+                position: 'absolute',
+                inset: `${16 + (ringIndex * 8)}%`,
+                borderRadius: '50%',
+                border: '1px solid rgba(239,178,255,0.18)',
+                boxShadow: '0 0 22px rgba(124,58,237,0.16)',
+                opacity: 0.46 - (ringIndex * 0.1),
+                animation: `lsOrbitRing ${6 + (ringIndex * 1.4)}s linear infinite`,
+                pointerEvents: 'none',
+              }}
+            />
+          ))}
 
           {/* Edge vignette to blend into bg */}
           <div style={{
@@ -136,7 +176,20 @@ export default function LoadingScene({ label, mode = 'fill' }: Props) {
 
         <style>{`
           @keyframes lsOrbitRing {
-            to { transform: rotate(360deg); }
+            from { transform: rotate(0deg) scale(0.98); }
+            50% { transform: rotate(180deg) scale(1.02); }
+            to { transform: rotate(360deg) scale(0.98); }
+          }
+
+          @keyframes lsCoreSpin {
+            from { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.04); }
+            to { transform: rotate(360deg) scale(1); }
+          }
+
+          @keyframes lsCoreFloat {
+            from { transform: translate3d(-6px, -4px, 0) scale(0.98); }
+            to { transform: translate3d(6px, 5px, 0) scale(1.03); }
           }
         `}</style>
       </div>

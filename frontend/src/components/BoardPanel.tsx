@@ -27,27 +27,19 @@ export default function BoardPanel({ videoUrl, isRendering, topic }: Props) {
         borderBottom: '1px solid rgba(167,72,255,0.08)',
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
         flexShrink: 0,
         position: 'relative',
         zIndex: 2,
       }}>
-        <div style={{
-          width: '7px', height: '7px', borderRadius: '50%',
-          background: videoUrl ? '#4ade80' : isRendering ? '#fbbf24' : 'rgba(167,72,255,0.4)',
-          boxShadow: videoUrl
-            ? '0 0 8px rgba(74,222,128,0.6)'
-            : isRendering
-            ? '0 0 8px rgba(251,191,36,0.6)'
-            : '0 0 6px rgba(167,72,255,0.35)',
-          transition: 'all 0.3s',
-        }} />
         <span style={{
           fontSize: '12px', fontWeight: 600,
           color: 'rgba(239,178,255,0.45)',
           letterSpacing: '0.05em',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}>
-          {isRendering ? 'Rendering…' : videoUrl ? 'Animation' : topic}
+          {topic}
         </span>
       </div>
 

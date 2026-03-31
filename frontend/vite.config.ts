@@ -3,12 +3,250 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import webSpatial from '@webspatial/vite-plugin'
 import { createHtmlPlugin } from 'vite-plugin-html'
+import crypto from 'node:crypto'
+
+function createPasswordGatePlugin(password?: string, adminPassword?: string) {
+  if (!password && !adminPassword) {
+    return null
+  }
+
+  const cookieName = 'luminary_demo_gate'
+  const demoDurationSeconds = 180
+  const adminDurationSeconds = 60 * 60 * 12
+  const signingSecret = crypto
+    .createHash('sha256')
+    .update(`luminary:${password || ''}:${adminPassword || ''}`)
+    .digest('hex')
+
+  type AccessRole = 'demo' | 'admin'
+
+  function signSession(payload: { role: AccessRole; expiresAt: number | null }) {
+    const encodedPayload = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url')
+    const signature = crypto.createHmac('sha256', signingSecret).update(encodedPayload).digest('hex')
+    return `${encodedPayload}.${signature}`
+  }
+
+  function parseCookies(cookieHeader?: string) {
+    return Object.fromEntries(
+      (cookieHeader || '')
+        .split(';')
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .map((part) => {
+          const eq = part.indexOf('=')
+          return eq === -1
+            ? [part, '']
+            : [part.slice(0, eq), decodeURIComponent(part.slice(eq + 1))]
+        }),
+    )
+  }
+
+  function readSession(cookieHeader?: string): { role: AccessRole; expiresAt: number | null } | null {
+    const token = parseCookies(cookieHeader)[cookieName]
+    if (!token) {
+      return null
+    }
+
+    const [encodedPayload, signature] = token.split('.')
+    if (!encodedPayload || !signature) {
+      return null
+    }
+
+    const expectedSignature = crypto.createHmac('sha256', signingSecret).update(encodedPayload).digest('hex')
+    if (signature !== expectedSignature) {
+      return null
+    }
+
+    try {
+      const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8')) as {
+        role?: AccessRole
+        expiresAt?: number | null
+      }
+
+      if (payload.role !== 'demo' && payload.role !== 'admin') {
+        return null
+      }
+
+      if (typeof payload.expiresAt === 'number' && payload.expiresAt <= Date.now()) {
+        return null
+      }
+
+      return {
+        role: payload.role,
+        expiresAt: payload.expiresAt ?? null,
+      }
+    } catch {
+      return null
+    }
+  }
+
+  function clearGateCookie(res: any) {
+    res.setHeader('Set-Cookie', `${cookieName}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`)
+  }
+
+  const loginPage = (error = false) => `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Luminary Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            },
+            boxShadow: {
+              glow: '0 20px 80px rgba(0,0,0,0.45)',
+            },
+          },
+        },
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body class="min-h-screen bg-black text-white antialiased">
+    <main class="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-10">
+      <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(147,51,234,0.22),_transparent_35%),radial-gradient(circle_at_bottom,_rgba(59,130,246,0.16),_transparent_30%)]"></div>
+      <div class="relative w-full max-w-md rounded-[30px] border border-white/10 bg-white/5 p-8 shadow-glow backdrop-blur-xl">
+        <div class="mb-7 flex items-center justify-between">
+          <div>
+            <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.34em] text-white/45">Luminary Demo</p>
+            <h1 class="text-3xl font-semibold tracking-[-0.04em]">Protected access</h1>
+          </div>
+          <div class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/55">3 min AI</div>
+        </div>
+
+        <div class="mb-6 rounded-2xl border border-violet-400/15 bg-violet-400/8 px-4 py-3 text-sm text-white/70">
+          The demo password unlocks a 3-minute AI session. The admin password unlocks full access.
+        </div>
+
+        <form method="POST" action="/__unlock" class="space-y-4">
+          <input
+            type="password"
+            name="password"
+            placeholder="Enter password"
+            autocomplete="current-password"
+            autofocus
+            class="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-[15px] text-white outline-none transition focus:border-violet-400/55 focus:ring-4 focus:ring-violet-400/15"
+          />
+          <button
+            type="submit"
+            class="w-full rounded-2xl bg-gradient-to-r from-violet-600 via-fuchsia-500 to-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/30 transition hover:brightness-110"
+          >
+            Unlock
+          </button>
+        </form>
+
+        ${error ? '<div class="mt-4 rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">Incorrect password.</div>' : ''}
+
+        <div class="mt-6 border-t border-white/10 pt-5">
+          <button
+            type="button"
+            onclick="const el = document.getElementById('contact-email'); el.classList.toggle('hidden')"
+            class="text-sm font-medium text-white/70 transition hover:text-white"
+          >
+            Need access? Click to reveal contact
+          </button>
+          <div id="contact-email" class="mt-3 hidden rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/80">
+            nesubonteng@gmail.com
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>`
+
+  const gate = (req: any, res: any, next: () => void) => {
+    const url = (req.url || '/').split('?')[0]
+    const session = readSession(req.headers.cookie)
+
+    if (url === '/__unlock' && req.method === 'POST') {
+      let body = ''
+      req.on('data', (chunk: Buffer) => {
+        body += chunk.toString('utf8')
+      })
+      req.on('end', () => {
+        const form = new URLSearchParams(body)
+        const submittedPassword = form.get('password') || ''
+        const isAdminPassword = Boolean(adminPassword) && submittedPassword === adminPassword
+        const isDemoPassword = Boolean(password) && submittedPassword === password
+
+        if (isAdminPassword || isDemoPassword) {
+          const role: AccessRole = isAdminPassword ? 'admin' : 'demo'
+          const expiresAt = role === 'demo' ? Date.now() + (demoDurationSeconds * 1000) : Date.now() + (adminDurationSeconds * 1000)
+          const token = signSession({ role, expiresAt })
+          const maxAge = role === 'demo' ? demoDurationSeconds : adminDurationSeconds
+          res.statusCode = 303
+          res.setHeader('Set-Cookie', `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`)
+          res.setHeader('Location', '/')
+          res.end()
+          return
+        }
+
+        res.statusCode = 401
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        res.setHeader('Cache-Control', 'no-store')
+        res.end(loginPage(true))
+      })
+      return
+    }
+
+    if (url === '/__access-meta') {
+      if (!session) {
+        clearGateCookie(res)
+        res.statusCode = 401
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.end(JSON.stringify({ error: 'Unauthorized' }))
+        return
+      }
+
+      const remainingSeconds = session.expiresAt === null
+        ? null
+        : Math.max(0, Math.ceil((session.expiresAt - Date.now()) / 1000))
+
+      res.statusCode = 200
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.setHeader('Cache-Control', 'no-store')
+      res.end(JSON.stringify({ role: session.role, remainingSeconds }))
+      return
+    }
+
+    if (session) {
+      next()
+      return
+    }
+
+    clearGateCookie(res)
+    res.statusCode = 401
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-store')
+    res.end(loginPage(false))
+  }
+
+  return {
+    name: 'luminary-password-gate',
+    configureServer(server: any) {
+      server.middlewares.use(gate)
+    },
+    configurePreviewServer(server: any) {
+      server.middlewares.use(gate)
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // loadEnv with '' prefix reads ALL env vars including XR_ENV set via CLI
   const env = loadEnv(mode, '.', '')
   const xrEnv = env['XR_ENV']
+  const sitePassword = env['SITE_PASSWORD']
+  const adminPassword = env['SITE_ADMIN_PASSWORD']
+  const passwordGatePlugin = createPasswordGatePlugin(sitePassword, adminPassword)
 
   return {
     server: {
@@ -24,6 +262,7 @@ export default defineConfig(({ mode }) => {
       webSpatial(),
       react(),
       tailwindcss(),
+      ...(passwordGatePlugin ? [passwordGatePlugin] : []),
       createHtmlPlugin({
         inject: {
           data: { XR_ENV: xrEnv },

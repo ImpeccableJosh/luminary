@@ -62,3 +62,5 @@ build/
 .turbo/
 .mp4
 videos/
+!frontend/public/demo-media/
+!frontend/public/demo-media/*.mp4

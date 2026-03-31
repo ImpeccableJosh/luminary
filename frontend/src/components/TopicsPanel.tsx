@@ -14,28 +14,31 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
     <div style={{
       width: '100%',
       height: '100%',
-      background: 'linear-gradient(180deg, rgba(124,58,237,0.10) 0%, rgba(255,255,255,0.02) 55%, rgba(255,255,255,0.015) 100%)',
-      borderRadius: '16px',
-      border: '1px solid rgba(167,139,250,0.18)',
+      background: 'linear-gradient(180deg, rgba(30,16,48,0.92) 0%, rgba(18,14,26,0.98) 55%, rgba(14,12,20,0.98) 100%)',
+      borderRadius: '18px',
+      border: '1px solid rgba(196,181,253,0.22)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
+      boxShadow: '0 22px 46px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(255,255,255,0.02)',
     }}>
       {/* Header */}
       <div style={{
-        padding: '14px 14px 12px',
-        borderBottom: '1px solid rgba(167,139,250,0.12)',
+        padding: '16px 16px 14px',
+        borderBottom: '1px solid rgba(196,181,253,0.14)',
         flexShrink: 0,
         position: 'relative',
       }}>
         {/* Label */}
         <p style={{
-          margin: '0 0 10px',
-          fontSize: '9px',
+          margin: '0 0 12px',
+          fontSize: '10px',
           fontWeight: 800,
-          letterSpacing: '0.22em',
+          letterSpacing: '0.24em',
           textTransform: 'uppercase',
-          color: 'rgba(196,181,253,0.42)',
+          color: 'rgba(226,214,255,0.76)',
+          textAlign: 'center',
+          textShadow: '0 0 18px rgba(167,72,255,0.22)',
         }}>
           Lesson History
         </p>
@@ -43,11 +46,11 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
         {/* Summary card — shows latest topic summary when available */}
         <div style={{
           position: 'relative',
-          borderRadius: '12px',
-          padding: '12px 13px',
-          background: 'linear-gradient(135deg, rgba(124,58,237,0.14) 0%, rgba(92,32,180,0.07) 100%)',
-          border: '1px solid rgba(167,139,250,0.22)',
-          boxShadow: '0 0 22px rgba(124,58,237,0.12), inset 0 0 0 1px rgba(239,178,255,0.04)',
+          borderRadius: '14px',
+          padding: '14px 15px',
+          background: 'linear-gradient(135deg, rgba(124,58,237,0.22) 0%, rgba(92,32,180,0.11) 100%)',
+          border: '1px solid rgba(196,181,253,0.26)',
+          boxShadow: '0 0 28px rgba(124,58,237,0.16), inset 0 0 0 1px rgba(239,178,255,0.05)',
           overflow: 'hidden',
         }}>
           {/* Ambient glow */}
@@ -62,7 +65,7 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
             <>
               <p style={{
                 margin: '0 0 5px',
-                fontSize: 'clamp(15px, 1.65vw, 19px)',
+                fontSize: 'clamp(16px, 1.7vw, 20px)',
                 fontWeight: 900,
                 lineHeight: 1.22,
                 letterSpacing: '-0.025em',
@@ -71,14 +74,16 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
                 backgroundClip: 'text',
                 color: 'transparent',
                 position: 'relative',
+                textAlign: 'center',
               }}>
                 {topics[topics.length - 1].summary ?? topics[topics.length - 1].title}
               </p>
               <p style={{
                 margin: 0,
                 fontSize: '10px',
-                color: 'rgba(196,181,253,0.5)',
+                color: 'rgba(226,214,255,0.62)',
                 letterSpacing: '0.01em',
+                textAlign: 'center',
               }}>
                 {topics.length} {topics.length === 1 ? 'topic' : 'topics'} covered
               </p>
@@ -89,8 +94,9 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
               fontSize: '13px',
               fontWeight: 700,
               fontStyle: 'italic',
-              color: 'rgba(196,181,253,0.28)',
+              color: 'rgba(226,214,255,0.34)',
               lineHeight: 1.4,
+              textAlign: 'center',
             }}>
               Your lesson summary will appear here
             </p>
@@ -110,14 +116,14 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '8px',
+        padding: '10px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '4px',
+        gap: '6px',
       }}>
         {topics.length === 0 && (
           <p style={{
-            color: 'rgba(255,255,255,0.2)',
+            color: 'rgba(255,255,255,0.3)',
             fontSize: '12px',
             textAlign: 'center',
             padding: '24px 8px',
@@ -136,23 +142,24 @@ export default function TopicsPanel({ topics, currentVideoUrl, onSelect }: Props
               style={{
                 width: '100%',
                 textAlign: 'left',
-                padding: '10px 12px',
-                borderRadius: '10px',
-                border: `1px solid ${isActive ? 'rgba(167,139,250,0.55)' : 'rgba(255,255,255,0.03)'}`,
+                padding: '12px 13px',
+                borderRadius: '12px',
+                border: `1px solid ${isActive ? 'rgba(196,181,253,0.58)' : 'rgba(255,255,255,0.06)'}`,
                 background: isActive
-                  ? 'rgba(124,58,237,0.22)'
-                  : 'rgba(255,255,255,0.025)',
+                  ? 'rgba(124,58,237,0.28)'
+                  : 'rgba(255,255,255,0.04)',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: '10px',
+                boxShadow: isActive ? '0 0 22px rgba(124,58,237,0.16)' : 'none',
               }}
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'rgba(167,139,250,0.08)'
+                if (!isActive) e.currentTarget.style.background = 'rgba(167,139,250,0.1)'
               }}
               onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.025)'
+                if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
               }}
             >
               {/* Index badge */}

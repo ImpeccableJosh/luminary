@@ -11,6 +11,7 @@ import type { LessonInfo, CompletedTopic, ChatMessage } from '@/App'
 import TeacherPanelTabs from './TeacherPanelTabs'
 import BoardPanel from './BoardPanel'
 import NotesBar from './NotesBar'
+import TopicsPanel from './TopicsPanel'
 
 // true when running inside the WebSpatial / visionOS app shell
 const IS_SPATIAL = import.meta.env.XR_ENV === 'avp'
@@ -185,8 +186,17 @@ export default function ClassroomView({
     setNoteDraft('')
   }, [noteDraft])
 
+  const requestMessages = messages.filter((msg) => msg.role === 'user')
+
   const brandIsActive = conversationStatus === 'connected' || conversationStatus === 'connecting'
   const brandGlowStrength = isTalking ? 1 : brandIsActive ? 0.72 : 0.42
+  const latestTopic = completedTopics[completedTopics.length - 1] ?? null
+  const lessonSummary = latestTopic?.summary
+    ?? latestTopic?.title
+    ?? `Beginning with ${lessonInfo.topic} in ${lessonInfo.subject}.`
+  const summaryMeta = latestTopic
+    ? 'Latest lesson summary'
+    : `Starting ${lessonInfo.subject}`
 
   useEffect(() => {
     const brandEl = brandRef.current
@@ -232,65 +242,54 @@ export default function ClassroomView({
   const chatPanel = (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      borderRadius: '12px',
-      background: 'linear-gradient(160deg, rgba(124,58,237,0.09) 0%, rgba(92,32,180,0.04) 100%)',
-      border: '1px solid rgba(167,72,255,0.22)',
-      boxShadow: 'inset 0 0 0 1px rgba(167,72,255,0.06), 0 4px 24px rgba(124,58,237,0.1)',
+      minHeight: 0,
+      height: '100%',
+      borderRadius: '16px',
+      background: 'linear-gradient(165deg, rgba(18,12,30,0.94) 0%, rgba(11,10,17,0.94) 100%)',
+      border: '1px solid rgba(196,181,253,0.14)',
+      boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.02), 0 18px 38px rgba(0,0,0,0.24)',
       overflow: 'hidden',
     }}>
       {/* Header */}
       <div style={{
-        padding: '10px 12px',
-        borderBottom: '1px solid rgba(167,72,255,0.15)',
+        padding: '12px 14px',
+        borderBottom: '1px solid rgba(196,181,253,0.10)',
         display: 'flex', alignItems: 'center', gap: '7px',
       }}>
         <span style={{
-          fontSize: '10px', fontWeight: 800, letterSpacing: '0.18em',
+          fontSize: '10px', fontWeight: 800, letterSpacing: '0.16em',
           textTransform: 'uppercase',
-          color: '#efb2ff',
-          textShadow: '0 0 10px rgba(239,178,255,0.45), 0 0 22px rgba(167,72,255,0.25)',
+          color: 'rgba(226,214,255,0.72)',
         }}>
-          Animate
+          Lesson Requests
         </span>
       </div>
 
       {/* Messages */}
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '10px',
+        flex: 1, minHeight: 0, overflowY: 'auto', padding: '10px',
         display: 'flex', flexDirection: 'column', gap: '6px',
       }}>
-        {messages.length === 0 && !isRendering && (
+        {requestMessages.length === 0 && !isRendering && (
           <p style={{
-            fontSize: '11px', color: 'rgba(239,178,255,0.28)',
+            fontSize: '12px', color: 'rgba(255,255,255,0.34)',
             fontStyle: 'italic', textAlign: 'center', marginTop: '16px',
           }}>
-            Describe a concept to visualise
+            Ask for another visual and it will appear in your lesson history.
           </p>
         )}
-        {isRendering && (
-          <div style={{
-            alignSelf: 'flex-start', padding: '6px 9px',
-            borderRadius: '9px 9px 9px 2px',
-            background: 'rgba(167,72,255,0.1)',
-            border: '1px solid rgba(167,72,255,0.2)',
-            fontSize: '11px', color: 'rgba(239,178,255,0.55)',
-            fontStyle: 'italic',
-          }}>
-            Rendering…
-          </div>
-        )}
-        {messages.map((msg) => (
+        {requestMessages.map((msg) => (
           <div key={msg.id} style={{
-            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            maxWidth: '88%', padding: '6px 9px',
-            borderRadius: msg.role === 'user' ? '9px 9px 2px 9px' : '9px 9px 9px 2px',
-            background: msg.role === 'user'
-              ? 'rgba(124,58,237,0.38)'
-              : 'rgba(167,72,255,0.1)',
-            border: `1px solid ${msg.role === 'user' ? 'rgba(167,72,255,0.42)' : 'rgba(167,72,255,0.18)'}`,
-            fontSize: '11px', lineHeight: 1.45,
-            color: msg.role === 'user' ? 'rgba(255,255,255,0.95)' : 'rgba(239,178,255,0.85)',
-            boxShadow: msg.role === 'user' ? '0 0 12px rgba(124,58,237,0.18)' : 'none',
+            alignSelf: 'flex-end',
+            maxWidth: '88%',
+            padding: '8px 10px',
+            borderRadius: '12px 12px 3px 12px',
+            background: 'rgba(124,58,237,0.38)',
+            border: '1px solid rgba(167,72,255,0.42)',
+            fontSize: '11px',
+            lineHeight: 1.45,
+            color: 'rgba(255,255,255,0.95)',
+            boxShadow: '0 0 12px rgba(124,58,237,0.18)',
           }}>
             {msg.text}
           </div>
@@ -300,6 +299,7 @@ export default function ClassroomView({
 
       {/* Input */}
       <div style={{
+        flexShrink: 0,
         padding: '7px', borderTop: '1px solid rgba(167,72,255,0.15)',
         display: 'flex', gap: '5px',
         background: 'rgba(92,32,180,0.06)',
@@ -339,6 +339,14 @@ export default function ClassroomView({
     </div>
   )
 
+  const historyPanel = (
+    <TopicsPanel
+      topics={completedTopics}
+      currentVideoUrl={currentVideoUrl}
+      onSelect={onSelectTopic}
+    />
+  )
+
   return (
     <div style={{
       width: '100vw',
@@ -351,17 +359,18 @@ export default function ClassroomView({
     }}>
       {/* Top bar */}
       <div style={{
-        height: '56px',
+        minHeight: '88px',
         flexShrink: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 20px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        background: 'linear-gradient(180deg, rgba(18,10,34,0.72) 0%, rgba(0,0,0,0.22) 100%)',
-        backdropFilter: 'blur(12px)',
+        padding: '16px 22px',
+        borderBottom: '1px solid rgba(196,181,253,0.08)',
+        background: 'linear-gradient(180deg, rgba(13,11,20,0.94) 0%, rgba(10,10,14,0.72) 100%)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
         position: 'relative',
-        boxShadow: 'inset 0 -1px 0 rgba(167,139,250,0.10), 0 10px 24px rgba(0,0,0,0.30)',
+        boxShadow: 'inset 0 -1px 0 rgba(196,181,253,0.08), 0 18px 38px rgba(0,0,0,0.24)',
       }}>
         {/* Left: branding */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 2 }}>
@@ -371,9 +380,10 @@ export default function ClassroomView({
             onMouseLeave={() => setIsBrandHovered(false)}
             style={{
               fontWeight: 800,
-              fontSize: '15px',
-              letterSpacing: '-0.02em',
+              fontSize: '17px',
+              letterSpacing: '-0.04em',
               color: '#efb2ff',
+              fontFamily: '"Unbounded", "SF Pro Display", "SF Pro Text", sans-serif',
               transition: 'color 0.2s ease, text-shadow 0.2s ease',
               textShadow: `
                 0 0 1px rgba(255,236,255,0.98),
@@ -390,43 +400,56 @@ export default function ClassroomView({
           </span>
         </div>
 
-        {/* Middle: one-word center label (keep it minimal) */}
+        {/* Middle: summary */}
         <div style={{
           position: 'absolute',
           left: '50%',
           transform: 'translateX(-50%)',
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: 'column',
           justifyContent: 'center',
           pointerEvents: 'none',
-          maxWidth: '60%',
+          maxWidth: 'min(58vw, 760px)',
+          width: '100%',
+          padding: '0 180px',
+          textAlign: 'center',
         }}>
           <span style={{
-            fontSize: '13px',
-            fontWeight: 900,
-            letterSpacing: '0.12em',
+            fontSize: '10px',
+            fontWeight: 700,
+            letterSpacing: '0.18em',
             textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.95)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            lineHeight: 1,
+            color: 'rgba(196,181,253,0.56)',
+            marginBottom: '5px',
           }}>
-            {lessonInfo.subject}
+            {summaryMeta}
+          </span>
+          <span style={{
+            fontSize: '15px',
+            fontWeight: 600,
+            letterSpacing: '-0.02em',
+            color: 'rgba(255,255,255,0.94)',
+            lineHeight: 1.28,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}>
+            {lessonSummary}
           </span>
         </div>
 
-        {/* Right: text toggle + status LED */}
+        {/* Right: text toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 2 }}>
           <button
             onClick={onToggleTextMode}
             title={textMode ? 'Switch to voice' : 'Switch to text (audio broken?)'}
             style={{
               display: 'flex', alignItems: 'center', gap: '5px',
-              background: textMode ? 'rgba(124,58,237,0.25)' : 'rgba(255,255,255,0.05)',
-              border: `1px solid ${textMode ? 'rgba(124,58,237,0.5)' : 'rgba(255,255,255,0.09)'}`,
-              borderRadius: '6px', padding: '4px 9px',
-              color: textMode ? 'rgba(196,181,253,0.9)' : 'rgba(255,255,255,0.35)',
+              background: textMode ? 'rgba(124,58,237,0.18)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${textMode ? 'rgba(167,139,250,0.34)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: '999px', padding: '6px 11px',
+              color: textMode ? 'rgba(226,214,255,0.92)' : 'rgba(255,255,255,0.48)',
               fontSize: '11px', fontWeight: 600, cursor: 'pointer',
               transition: 'all 0.2s',
             }}
@@ -437,22 +460,6 @@ export default function ClassroomView({
             </svg>
             Text
           </button>
-
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{
-              width: '11px',
-              height: '11px',
-              borderRadius: '50%',
-              background: '#22c55e',
-              boxShadow: conversationStatus === 'connected'
-                ? (isTalking
-                  ? '0 0 0 5px rgba(34,197,94,0.18), 0 0 14px rgba(34,197,94,0.95)'
-                  : '0 0 0 3px rgba(34,197,94,0.14), 0 0 10px rgba(34,197,94,0.75)')
-                : '0 0 0 2px rgba(34,197,94,0.12), 0 0 8px rgba(34,197,94,0.55)',
-              opacity: conversationStatus === 'disconnecting' ? 0.7 : 1,
-              transition: 'all 0.3s',
-            }} />
-          </div>
         </div>
       </div>
 
@@ -487,13 +494,27 @@ export default function ClassroomView({
             </div>
           </>
         ) : (
-          // Web mode: teacher/chat left | board right
+          // Web mode: left stack (teacher/chat + history) | board right
           <>
-            {/* Left — Teacher or Chat (25%) */}
-            <div style={{ flex: '0 0 25%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              {textMode ? chatPanel : (
-                <TeacherPanelTabs isTalking={isTalking} isSpaceMode={isSpaceMode} />
-              )}
+            <div style={{
+              flex: '0 0 31%',
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}>
+              <div style={{
+                flex: textMode ? '1 1 50%' : '0 0 52%',
+                minHeight: 0,
+                display: 'flex',
+              }}>
+                {textMode ? chatPanel : (
+                  <TeacherPanelTabs isTalking={isTalking} isSpaceMode={isSpaceMode} />
+                )}
+              </div>
+              <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+                {historyPanel}
+              </div>
             </div>
 
             {/* Board — fills remaining space */}

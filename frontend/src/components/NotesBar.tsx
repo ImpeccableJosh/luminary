@@ -85,11 +85,11 @@ export default function NotesBar({ draft, notes, onDraftChange, onAddNote, isAdd
             style={{
               flex: 1,
               resize: 'none',
-              background: 'rgba(167,72,255,0.07)',
-              border: '1px solid rgba(167,72,255,0.18)',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(226,214,255,0.22)',
               borderRadius: '8px',
               padding: '8px 10px',
-              color: 'white',
+              color: 'rgba(255,255,255,0.96)',
               fontSize: '11px',
               lineHeight: 1.45,
               outline: 'none',
@@ -189,8 +189,11 @@ export default function NotesBar({ draft, notes, onDraftChange, onAddNote, isAdd
       </div>
 
       <style>{`
-        .lm-notesbar-textarea::placeholder { color: rgba(239,178,255,0.25); }
-        .lm-notesbar-textarea:focus { border-color: rgba(167,72,255,0.42) !important; }
+        .lm-notesbar-textarea::placeholder { color: rgba(255,255,255,0.56); }
+        .lm-notesbar-textarea:focus {
+          border-color: rgba(216,196,255,0.7) !important;
+          box-shadow: 0 0 0 3px rgba(124,58,237,0.14);
+        }
       `}</style>
     </div>
   )

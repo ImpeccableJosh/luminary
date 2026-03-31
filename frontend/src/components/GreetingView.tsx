@@ -71,12 +71,20 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
   const phraseLoopRef = useRef<gsap.core.Timeline | null>(null)
   const shimmerTweenRef = useRef<gsap.core.Tween | null>(null)
   const isShowingLuminaryRef = useRef(false)
+  const disconnectResetTimerRef = useRef<number | null>(null)
   const micGlowXToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micGlowYToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micSurfaceXToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micSurfaceYToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micSwirlXToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
   const micSwirlYToRef = useRef<((value: number) => gsap.core.Tween) | null>(null)
+
+  const clearDisconnectResetTimer = () => {
+    if (disconnectResetTimerRef.current !== null) {
+      window.clearTimeout(disconnectResetTimerRef.current)
+      disconnectResetTimerRef.current = null
+    }
+  }
 
   useEffect(() => {
     if (!phraseRef.current) {
@@ -332,14 +340,32 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
 
   useEffect(() => {
     if (isConnected || isConnecting) {
+      clearDisconnectResetTimer()
       setIsWaveformMode(true)
       return
     }
 
-    if (status === 'disconnected') {
-      setIsWaveformMode(false)
+    if (status === 'disconnecting') {
+      clearDisconnectResetTimer()
+      return
     }
-  }, [isConnected, isConnecting, status])
+
+    if (status === 'disconnected') {
+      clearDisconnectResetTimer()
+      disconnectResetTimerRef.current = window.setTimeout(() => {
+        setIsWaveformMode(false)
+        disconnectResetTimerRef.current = null
+      }, error ? 450 : 1600)
+    }
+
+    return () => {
+      clearDisconnectResetTimer()
+    }
+  }, [error, isConnected, isConnecting, status])
+
+  useEffect(() => () => {
+    clearDisconnectResetTimer()
+  }, [])
 
   useEffect(() => {
     const fragments = micFragmentRefs.current.filter((fragment): fragment is HTMLDivElement => Boolean(fragment))
@@ -692,11 +718,13 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
     })
 
     if (isConnected) {
+      clearDisconnectResetTimer()
       setIsWaveformMode(false)
       onStop()
       return
     }
 
+    clearDisconnectResetTimer()
     setIsWaveformMode(true)
     onStart()
   }
@@ -943,6 +971,35 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
               }}
             >
               <div
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: '10px',
+                  borderRadius: '50%',
+                  background:
+                    'conic-gradient(from 200deg, rgba(255,255,255,0) 0deg, rgba(230,198,255,0.16) 34deg, rgba(154,88,255,0.38) 106deg, rgba(65,110,255,0.18) 196deg, rgba(255,255,255,0) 270deg, rgba(186,120,255,0.24) 360deg)',
+                  filter: 'blur(10px) saturate(1.16)',
+                  opacity: isConnected ? (isSpeaking ? 0.86 : 0.62) : 0.44,
+                  mixBlendMode: 'screen',
+                  animation: isSpeaking ? 'lmCoreSpin 3.4s linear infinite' : 'lmCoreSpin 8.6s linear infinite',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: '18px',
+                  borderRadius: '50%',
+                  background:
+                    'radial-gradient(circle at 34% 28%, rgba(255,255,255,0.3) 0%, rgba(255,235,255,0.16) 18%, rgba(191,124,255,0.16) 34%, rgba(93,41,180,0.04) 60%, rgba(93,41,180,0) 78%)',
+                  filter: 'blur(4px)',
+                  opacity: isConnected ? 0.92 : 0.74,
+                  animation: 'lmCoreDrift 6.4s ease-in-out infinite alternate',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div
                 ref={micTintRef}
                 style={{
                   position: 'absolute',
@@ -1031,6 +1088,17 @@ export default function GreetingView({ status, isSpeaking, onStart, onStop, onEn
           @keyframes lmSwirlSpin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
+          }
+
+          @keyframes lmCoreSpin {
+            from { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.04); }
+            to { transform: rotate(360deg) scale(1); }
+          }
+
+          @keyframes lmCoreDrift {
+            from { transform: translate3d(-3px, -2px, 0) scale(0.98); }
+            to { transform: translate3d(4px, 3px, 0) scale(1.04); }
           }
         `}</style>
 
